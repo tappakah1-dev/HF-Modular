@@ -8,290 +8,157 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
   :root{
-    --hf-red:#E31E24;
-    --hf-red-dark:#B8161B;
-    --hf-green:#1B4D2E;
-    --hf-green-dark:#0F3320;
-    --ink:#181A17;
-    --paper:#FFFFFF;
-    --stone:#F4F5F2;
-    --stone-dark:#E7E9E3;
-    --line:#DADCD5;
-    --gold:#C9A24B;
+    --hf-red:#E31E24; --hf-red-dark:#B8161B;
+    --hf-green:#1B4D2E; --hf-green-dark:#0F3320;
+    --ink:#181A17; --paper:#FFFFFF; --stone:#F4F5F2; --stone-dark:#E7E9E3; --line:#DADCD5;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{
-    font-family:'Inter',sans-serif;
-    color:var(--ink);
-    background:var(--paper);
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3,.display{
-    font-family:'Archivo Black',sans-serif;
-    text-transform:uppercase;
-    letter-spacing:-0.01em;
-    line-height:1.02;
-    margin:0;
-  }
+  body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-0.01em;line-height:1.02;margin:0;}
   a{color:inherit;text-decoration:none;}
   img{max-width:100%;display:block;}
   button{font-family:inherit;cursor:pointer;}
 
-  /* ---------- Top utility bar ---------- */
-  .utility-bar{
-    background:var(--stone);
-    border-bottom:1px solid var(--line);
-    font-size:13px;
-    color:#4b4f47;
-  }
-  .utility-inner{
-    max-width:1280px;margin:0 auto;padding:8px 24px;
-    display:flex;align-items:center;justify-content:space-between;
-    flex-wrap:wrap;gap:8px;
-  }
+  .utility-bar{background:var(--stone);border-bottom:1px solid var(--line);font-size:13px;color:#4b4f47;}
+  .utility-inner{max-width:1280px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
   .utility-inner .right{display:flex;gap:20px;align-items:center;}
   .utility-inner .right span{white-space:nowrap;}
 
-  /* ---------- Header ---------- */
-  header.main{
-    max-width:1280px;margin:0 auto;padding:18px 24px;
-    display:flex;align-items:center;gap:32px;
-  }
+  header.main{max-width:1280px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:32px;}
   .logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-  .logo .mark{
-    width:34px;height:34px;background:var(--hf-red);
-    clip-path:polygon(50% 0%,0% 100%,100% 100%);
-  }
+  .logo .mark{width:34px;height:34px;background:var(--hf-red);clip-path:polygon(50% 0%,0% 100%,100% 100%);}
   .logo .word{font-family:'Archivo Black',sans-serif;font-size:22px;letter-spacing:-0.02em;}
   .logo .word span{color:var(--hf-red);}
   .search-wrap{flex:1;display:flex;max-width:520px;}
-  .search-wrap input{
-    flex:1;border:2px solid var(--ink);border-right:none;
-    padding:12px 16px;font-size:15px;font-style:italic;border-radius:2px 0 0 2px;
-    font-family:'Inter',sans-serif;
-  }
-  .search-wrap button{
-    background:var(--ink);border:2px solid var(--ink);color:#fff;
-    padding:0 18px;border-radius:0 2px 2px 0;
-  }
+  .search-wrap input{flex:1;border:2px solid var(--ink);border-right:none;padding:12px 16px;font-size:15px;font-style:italic;border-radius:2px 0 0 2px;font-family:'Inter',sans-serif;}
+  .search-wrap button{background:var(--ink);border:2px solid var(--ink);color:#fff;padding:0 18px;border-radius:0 2px 2px 0;}
   .head-actions{display:flex;align-items:center;gap:28px;flex-shrink:0;margin-left:auto;}
   .head-actions .item{display:flex;flex-direction:column;font-size:12px;font-weight:700;text-align:center;gap:2px;}
   .head-actions .icon{font-size:20px;}
-  .head-actions .cta{
-    background:var(--hf-red);color:#fff;padding:10px 20px;border-radius:3px;
-    font-weight:800;font-size:13px;letter-spacing:0.02em;
-  }
+  .head-actions .cta{background:var(--hf-red);color:#fff;padding:10px 20px;border-radius:3px;font-weight:800;font-size:13px;letter-spacing:0.02em;}
 
   nav.mainnav{background:var(--hf-green);color:#fff;}
-  .mainnav-inner{
-    max-width:1280px;margin:0 auto;padding:0 24px;
-    display:flex;align-items:center;gap:30px;font-size:14px;font-weight:700;
-    letter-spacing:0.02em;overflow-x:auto;
-  }
+  .mainnav-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:30px;font-size:14px;font-weight:700;letter-spacing:0.02em;overflow-x:auto;}
   .mainnav-inner a{padding:14px 0;white-space:nowrap;border-bottom:3px solid transparent;}
   .mainnav-inner a:hover{border-color:var(--hf-red);}
   .mainnav-inner a.active{border-color:var(--hf-red);color:#fff;}
   .burger{display:flex;align-items:center;gap:8px;padding:14px 0;font-weight:800;}
 
-  /* ---------- Hero ---------- */
-  .hero{
-    position:relative;
-    background:linear-gradient(120deg, var(--hf-green) 0%, var(--hf-green-dark) 55%, #0a1f14 100%);
-    color:#fff;overflow:hidden;
-  }
-  .hero-inner{
-    max-width:1280px;margin:0 auto;padding:72px 24px 90px;
-    display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center;
-  }
-  .eyebrow{
-    display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);
-    border:1px solid rgba(255,255,255,0.35);padding:6px 14px;border-radius:20px;
-    font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:22px;
-  }
+  .hero{position:relative;background:linear-gradient(120deg, var(--hf-green) 0%, var(--hf-green-dark) 55%, #0a1f14 100%);color:#fff;overflow:hidden;}
+  .hero-inner{max-width:1280px;margin:0 auto;padding:72px 24px 90px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.35);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:22px;}
   .eyebrow .dot{width:7px;height:7px;background:var(--hf-red);border-radius:50%;}
-  .hero h1{font-size:52px;color:#fff;margin-bottom:20px;}
+  .hero h1{font-size:48px;color:#fff;margin-bottom:20px;}
   .hero h1 em{font-style:normal;color:var(--hf-red);}
   .hero p.lede{font-size:18px;line-height:1.55;color:#DDE6DE;max-width:520px;margin-bottom:32px;font-weight:500;}
   .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;}
-  .btn-primary{
-    background:var(--hf-red);color:#fff;padding:16px 28px;border-radius:3px;
-    font-weight:800;font-size:15px;border:none;letter-spacing:0.01em;
-    display:inline-flex;align-items:center;gap:10px;
-  }
+  .btn-primary{background:var(--hf-red);color:#fff;padding:16px 28px;border-radius:3px;font-weight:800;font-size:15px;border:none;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:10px;}
   .btn-primary:hover{background:var(--hf-red-dark);}
-  .btn-ghost{
-    background:transparent;color:#fff;padding:16px 28px;border-radius:3px;
-    font-weight:800;font-size:15px;border:2px solid rgba(255,255,255,0.5);
-  }
+  .btn-ghost{background:transparent;color:#fff;padding:16px 28px;border-radius:3px;font-weight:800;font-size:15px;border:2px solid rgba(255,255,255,0.5);}
   .btn-ghost:hover{border-color:#fff;}
   .hero-stats{display:flex;gap:34px;margin-top:44px;flex-wrap:wrap;}
   .hero-stats .stat b{display:block;font-family:'Archivo Black';font-size:26px;color:#fff;}
   .hero-stats .stat span{font-size:12.5px;color:#B9C7BB;text-transform:uppercase;letter-spacing:0.04em;}
+  .hero-visual{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:14px;}
+  .hero-visual .frame{background:#BFE3F0;border-radius:4px;overflow:hidden;position:relative;}
+  .badge-corner{position:absolute;top:14px;right:14px;background:var(--hf-red);color:#fff;font-size:11px;font-weight:800;padding:6px 10px;border-radius:3px;letter-spacing:0.03em;z-index:2;}
 
-  .hero-visual{
-    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);
-    border-radius:8px;padding:14px;
-  }
-  .hero-visual .frame{
-    background:#0c1f14;border-radius:4px;overflow:hidden;position:relative;
-  }
-  .hero-visual canvas{width:100%;display:block;}
-  .badge-corner{
-    position:absolute;top:14px;right:14px;background:var(--hf-red);color:#fff;
-    font-size:11px;font-weight:800;padding:6px 10px;border-radius:3px;letter-spacing:0.03em;
-  }
-
-  /* ---------- Trust strip ---------- */
-  .trust{
-    background:var(--stone);border-bottom:1px solid var(--line);border-top:1px solid var(--line);
-  }
-  .trust-inner{
-    max-width:1280px;margin:0 auto;padding:26px 24px;
-    display:grid;grid-template-columns:repeat(4,1fr);gap:20px;
-  }
+  .trust{background:var(--stone);border-bottom:1px solid var(--line);border-top:1px solid var(--line);}
+  .trust-inner{max-width:1280px;margin:0 auto;padding:26px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
   .trust-item{display:flex;gap:14px;align-items:flex-start;}
-  .trust-item .n{
-    font-family:'Archivo Black';font-size:20px;color:var(--hf-red);flex-shrink:0;width:38px;
-  }
+  .trust-item .n{font-family:'Archivo Black';font-size:20px;color:var(--hf-red);flex-shrink:0;width:38px;}
   .trust-item h4{font-size:14px;text-transform:none;font-family:'Inter';font-weight:800;margin-bottom:4px;}
   .trust-item p{font-size:13px;color:#5b5f56;margin:0;line-height:1.4;}
 
-  /* ---------- Section shell ---------- */
   section{padding:80px 24px;}
   .section-inner{max-width:1280px;margin:0 auto;}
   .section-head{max-width:640px;margin-bottom:48px;}
-  .section-head .kicker{
-    color:var(--hf-red);font-weight:800;font-size:13px;letter-spacing:0.1em;
-    text-transform:uppercase;margin-bottom:10px;display:block;
-  }
+  .section-head .kicker{color:var(--hf-red);font-weight:800;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;display:block;}
   .section-head h2{font-size:36px;margin-bottom:14px;}
   .section-head p{font-size:16px;color:#5b5f56;line-height:1.6;}
 
-  /* capability grid */
   .cap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
   .cap-card{background:#fff;padding:30px 24px;}
-  .cap-card .ico{width:44px;height:44px;background:var(--stone);border-radius:6px;margin-bottom:18px;
-    display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--hf-green);}
+  .cap-card .ico{width:44px;height:44px;background:var(--stone);border-radius:6px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--hf-green);}
   .cap-card h4{font-family:'Inter';text-transform:none;font-weight:800;font-size:16px;margin-bottom:8px;}
   .cap-card p{font-size:13.5px;color:#5b5f56;line-height:1.55;margin:0;}
 
-  /* ---------- Configurator ---------- */
   .configurator{background:var(--stone);}
-  .config-wrap{
-    background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;
-    display:grid;grid-template-columns:1fr 1fr;min-height:640px;
-  }
-  .config-left{padding:36px 40px;border-right:1px solid var(--line);}
+  .config-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:680px;}
+  .config-left{padding:36px 40px;border-right:1px solid var(--line);display:flex;flex-direction:column;}
   .steps-bar{display:flex;gap:6px;margin-bottom:28px;}
-  .step-pill{
-    flex:1;height:5px;border-radius:3px;background:var(--stone-dark);
-    position:relative;overflow:hidden;
-  }
+  .step-pill{flex:1;height:5px;border-radius:3px;background:var(--stone-dark);}
   .step-pill.done, .step-pill.active{background:var(--hf-red);}
   .step-label{font-size:12px;font-weight:700;color:#6c7066;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
   .step-title{font-family:'Archivo Black';font-size:24px;text-transform:none;margin-bottom:6px;}
-  .step-sub{font-size:14px;color:#5b5f56;margin-bottom:28px;line-height:1.5;}
+  .step-sub{font-size:14px;color:#5b5f56;margin-bottom:24px;line-height:1.5;}
+  .step-panel{flex:1;}
 
-  .field{margin-bottom:24px;}
+  .field{margin-bottom:22px;}
   .field label{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:10px;}
   .field label .val{color:var(--hf-red);font-family:'Archivo Black';font-size:13px;}
-  input[type=range]{
-    -webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--stone-dark);outline:none;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--hf-red);
-    border:3px solid #fff;box-shadow:0 0 0 1px var(--hf-red);cursor:pointer;
-  }
+  .field .hint{font-size:12px;color:#8a8e83;margin-top:6px;}
+  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--stone-dark);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--hf-red);border:3px solid #fff;box-shadow:0 0 0 1px var(--hf-red);cursor:pointer;}
   .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .opt-grid.two{grid-template-columns:repeat(2,1fr);}
-  .opt-card{
-    border:2px solid var(--line);border-radius:6px;padding:12px 10px;text-align:center;
-    font-size:12.5px;font-weight:700;color:#4b4f47;transition:.15s;
-  }
+  .opt-grid.one{grid-template-columns:1fr;}
+  .opt-card{border:2px solid var(--line);border-radius:6px;padding:12px 10px;text-align:left;font-size:12.5px;font-weight:700;color:#4b4f47;transition:.15s;}
   .opt-card .swatch{width:100%;height:32px;border-radius:4px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.08);}
   .opt-card.selected{border-color:var(--hf-red);background:#FFF3F3;color:var(--hf-red-dark);}
   .opt-card:hover{border-color:var(--hf-red);}
+  .opt-card small{font-weight:500;color:#8a8e83;display:block;margin-top:3px;}
+  .type-card{display:flex;align-items:flex-start;gap:12px;padding:14px;text-align:left;}
+  .type-card .ticon{font-size:22px;flex-shrink:0;width:30px;}
+  .type-card .ttext b{display:block;font-size:14px;margin-bottom:2px;}
+  .type-card .ttext span{font-weight:500;color:#8a8e83;font-size:12px;}
+
   .stepper{display:flex;align-items:center;gap:14px;}
-  .stepper button{
-    width:34px;height:34px;border-radius:6px;border:2px solid var(--line);background:#fff;
-    font-size:18px;font-weight:800;color:var(--hf-green);
-  }
+  .stepper button{width:34px;height:34px;border-radius:6px;border:2px solid var(--line);background:#fff;font-size:18px;font-weight:800;color:var(--hf-green);}
   .stepper button:hover{border-color:var(--hf-red);color:var(--hf-red);}
   .stepper .count{font-family:'Archivo Black';font-size:20px;min-width:26px;text-align:center;}
-
   .win-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--stone-dark);}
   .win-row:last-child{border-bottom:none;}
   .win-row .wname{font-size:14px;font-weight:700;}
   .win-row .wname small{display:block;font-weight:500;color:#8a8e83;font-size:12px;}
 
-  .nav-buttons{display:flex;justify-content:space-between;margin-top:32px;}
-  .btn-outline{
-    background:#fff;border:2px solid var(--ink);color:var(--ink);padding:13px 22px;
-    border-radius:3px;font-weight:800;font-size:14px;
-  }
+  .nav-buttons{display:flex;justify-content:space-between;margin-top:28px;}
+  .btn-outline{background:#fff;border:2px solid var(--ink);color:var(--ink);padding:13px 22px;border-radius:3px;font-weight:800;font-size:14px;}
   .btn-outline:hover{border-color:var(--hf-red);color:var(--hf-red);}
-  .btn-solid{
-    background:var(--hf-red);color:#fff;padding:13px 26px;border:none;border-radius:3px;font-weight:800;font-size:14px;
-  }
+  .btn-solid{background:var(--hf-red);color:#fff;padding:13px 26px;border:none;border-radius:3px;font-weight:800;font-size:14px;}
   .btn-solid:hover{background:var(--hf-red-dark);}
   .btn-solid:disabled{background:#c9ccc3;cursor:not-allowed;}
 
-  .config-right{background:#0c1f14;position:relative;display:flex;flex-direction:column;}
+  .config-right{background:#BFE3F0;position:relative;display:flex;flex-direction:column;}
   .viewer{flex:1;position:relative;}
   #canvas-holder{width:100%;height:100%;}
-  .viewer-controls{
-    position:absolute;top:16px;left:16px;display:flex;gap:8px;
-  }
-  .vc-btn{
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:#fff;
-    width:34px;height:34px;border-radius:6px;font-size:15px;display:flex;align-items:center;justify-content:center;
-  }
-  .vc-btn:hover{background:rgba(255,255,255,0.2);}
-  .price-panel{
-    background:#0F3320;border-top:1px solid rgba(255,255,255,0.12);padding:22px 28px;color:#fff;
-  }
+  .viewer-hint{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.45);color:#fff;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:20px;}
+  .price-panel{background:#0F3320;border-top:1px solid rgba(255,255,255,0.12);padding:22px 28px;color:#fff;}
   .price-row{display:flex;justify-content:space-between;align-items:flex-end;}
   .price-row .lbl{font-size:12px;color:#9DB5A3;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;}
   .price-row .amt{font-family:'Archivo Black';font-size:32px;}
   .price-row .amt small{font-size:14px;font-family:'Inter';font-weight:600;color:#9DB5A3;}
   .price-note{font-size:11.5px;color:#87A08E;margin-top:6px;}
-  .dims-tag{
-    position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.5);color:#fff;
-    padding:8px 14px;border-radius:6px;font-size:12.5px;font-weight:700;
-  }
+  .dims-tag{position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.45);color:#fff;padding:8px 14px;border-radius:6px;font-size:12.5px;font-weight:700;}
 
-  /* summary step */
   .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
   .summary-item{background:var(--stone);border-radius:6px;padding:12px 14px;}
   .summary-item .k{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#8a8e83;font-weight:700;margin-bottom:3px;}
   .summary-item .v{font-size:14px;font-weight:700;}
-
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .form-grid .full{grid-column:1/-1;}
-  .form-grid input, .form-grid textarea{
-    width:100%;border:2px solid var(--line);border-radius:6px;padding:12px 14px;font-size:14px;
-    font-family:'Inter';
-  }
+  .form-grid input, .form-grid textarea{width:100%;border:2px solid var(--line);border-radius:6px;padding:12px 14px;font-size:14px;font-family:'Inter';}
   .form-grid input:focus, .form-grid textarea:focus{border-color:var(--hf-red);outline:none;}
   .form-grid label{font-size:12.5px;font-weight:700;margin-bottom:6px;display:block;}
+  .success{text-align:center;padding:60px 20px;}
+  .success .check{width:70px;height:70px;border-radius:50%;background:#E9F5EC;color:#1B7A3D;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;}
 
-  .success{
-    text-align:center;padding:60px 20px;
-  }
-  .success .check{
-    width:70px;height:70px;border-radius:50%;background:#E9F5EC;color:#1B7A3D;
-    display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;
-  }
-
-  /* ---------- Gallery / info ---------- */
   .gallery-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:20px;grid-template-rows:auto auto;}
-  .gcard{
-    border-radius:8px;overflow:hidden;position:relative;color:#fff;min-height:220px;
-    display:flex;align-items:flex-end;padding:22px;background-size:cover;background-position:center;
-  }
+  .gcard{border-radius:8px;overflow:hidden;position:relative;color:#fff;min-height:220px;display:flex;align-items:flex-end;padding:22px;background-size:cover;background-position:center;}
   .gcard::before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,0.65),rgba(0,0,0,0.05));}
   .gcard span{position:relative;font-family:'Archivo Black';font-size:19px;text-transform:uppercase;}
   .gcard.tall{grid-row:1/3;min-height:460px;}
@@ -332,14 +199,8 @@
 </div>
 
 <header class="main">
-  <div class="logo">
-    <div class="mark"></div>
-    <div class="word">HALDANE FISHER <span>MODULAR</span></div>
-  </div>
-  <div class="search-wrap">
-    <input type="text" placeholder="Search modular ranges, specs, brochures...">
-    <button>🔍</button>
-  </div>
+  <div class="logo"><div class="mark"></div><div class="word">HALDANE FISHER <span>MODULAR</span></div></div>
+  <div class="search-wrap"><input type="text" placeholder="Search garden rooms, annexes, sheds..."><button>🔍</button></div>
   <div class="head-actions">
     <div class="item"><div class="icon">📍</div>Find a Branch</div>
     <div class="item"><div class="icon">📄</div>Download Brochure</div>
@@ -350,8 +211,8 @@
 <nav class="mainnav">
   <div class="mainnav-inner">
     <a class="burger">☰ ALL PRODUCTS</a>
-    <a href="#" class="active">Modular Homes</a>
-    <a href="#">Garden Rooms &amp; Annexes</a>
+    <a href="#" class="active">Modular Buildings</a>
+    <a href="#">Garden Rooms &amp; Offices</a>
     <a href="#">Roof Trusses</a>
     <a href="#">Spacejoists</a>
     <a href="#">Timber Frame</a>
@@ -364,15 +225,15 @@
   <div class="hero-inner">
     <div>
       <div class="eyebrow"><span class="dot"></span>NEW — DESIGN &amp; PRICE ONLINE</div>
-      <h1>Build your <em>modular home</em>,<br>from our factory floor.</h1>
-      <p class="lede">Haldane Fisher has engineered roof trusses and I-joists for the NI &amp; ROI construction industry for over 45 years. Now we're bringing that same manufacturing precision to fully modular buildings — designed by you, built by us.</p>
+      <h1>Sized for a real<br>NI or ROI <em>garden</em>.</h1>
+      <p class="lede">From a compact 2.5m garden office to an 8×8m granny annexe — Haldane Fisher manufactures the timber frame, roof trusses and cladding for modular garden buildings ourselves. Design yours below and see it, and price it, before you contact us.</p>
       <div class="hero-ctas">
         <a href="#configurator" class="btn-primary">Design Your Build →</a>
         <a href="#capability" class="btn-ghost">See What We Manufacture</a>
       </div>
       <div class="hero-stats">
         <div class="stat"><b>45+</b><span>Years Manufacturing</span></div>
-        <div class="stat"><b>12</b><span>NI &amp; ROI Branches</span></div>
+        <div class="stat"><b>2.5–8m</b><span>Realistic Garden Sizes</span></div>
         <div class="stat"><b>100%</b><span>In-House Components</span></div>
       </div>
     </div>
@@ -387,8 +248,8 @@
 
 <div class="trust">
   <div class="trust-inner">
-    <div class="trust-item"><div class="n">01</div><div><h4>Trusses, Made Here</h4><p>Roof trusses &amp; spacejoists engineered in our own facilities — no third-party sourcing delays.</p></div></div>
-    <div class="trust-item"><div class="n">02</div><div><h4>Full Component Range</h4><p>Timber frame, cladding, insulation and joinery already in our supply chain.</p></div></div>
+    <div class="trust-item"><div class="n">01</div><div><h4>Built To Garden Scale</h4><p>Every preset here — office, room, annexe, shed — is sized to what actually fits a typical NI/ROI back garden.</p></div></div>
+    <div class="trust-item"><div class="n">02</div><div><h4>Trusses, Made Here</h4><p>Roof trusses &amp; spacejoists engineered in our own facilities — no third-party sourcing delays.</p></div></div>
     <div class="trust-item"><div class="n">03</div><div><h4>Design Online, Build Offsite</h4><p>Configure your building on this site — we manufacture it in a controlled factory environment.</p></div></div>
     <div class="trust-item"><div class="n">04</div><div><h4>One Point of Contact</h4><p>From your first sketch to final handover, one Haldane Fisher team sees it through.</p></div></div>
   </div>
@@ -405,7 +266,7 @@
       <div class="cap-card"><div class="ico">🏗</div><h4>Structural Frame</h4><p>Engineered roof trusses and floor spacejoists from our own production lines, built to spec for every unit.</p></div>
       <div class="cap-card"><div class="ico">🌲</div><h4>Timber Cladding</h4><p>Tongue &amp; groove external cladding in a range of species, profiles and factory-applied finishes.</p></div>
       <div class="cap-card"><div class="ico">🧊</div><h4>Insulation Systems</h4><p>From standard building-regs spec through to near-passive-house performance, fitted offsite.</p></div>
-      <div class="cap-card"><div class="ico">🚚</div><h4>Offsite Build, Onsite Install</h4><p>Modules are completed in a controlled factory environment, then transported and installed on your foundation.</p></div>
+      <div class="cap-card"><div class="ico">🚚</div><h4>Offsite Build, Onsite Install</h4><p>Modules are completed in a controlled factory environment, then transported and installed on your base.</p></div>
     </div>
   </div>
 </section>
@@ -415,129 +276,116 @@
     <div class="section-head">
       <span class="kicker">Design Tool — Prototype</span>
       <h2>Design your building.</h2>
-      <p>Set your dimensions, openings and finishes below. The 3D preview and estimated price update as you go — submit your spec at the end and our team will follow up with a formal quote.</p>
+      <p>Tell us what you're building and how big your garden allows, then fine-tune windows, cladding and insulation. Drag the 3D view to look around — it updates as you go.</p>
     </div>
 
     <div class="config-wrap">
       <div class="config-left">
         <div class="steps-bar" id="stepsBar"></div>
 
-        <!-- STEP 1: Dimensions -->
+        <!-- STEP 1: Building type -->
         <div class="step-panel" data-step="1">
-          <div class="step-label">Step 1 of 5</div>
-          <div class="step-title">Footprint &amp; height</div>
-          <div class="step-sub">Set the overall size of your building. We manufacture in modular bays, so odd sizes are rounded to the nearest buildable increment.</div>
-
-          <div class="field">
-            <label>Width <span class="val" id="valWidth">6.0 m</span></label>
-            <input type="range" id="rngWidth" min="3" max="14" step="0.2" value="6">
-          </div>
-          <div class="field">
-            <label>Length <span class="val" id="valLength">8.0 m</span></label>
-            <input type="range" id="rngLength" min="3" max="24" step="0.2" value="8">
-          </div>
-          <div class="field">
-            <label>Eaves height</label>
-            <div class="opt-grid two" id="optHeight">
-              <div class="opt-card" data-v="2.4">2.4 m — Single Storey</div>
-              <div class="opt-card" data-v="4.8">4.8 m — Two Storey</div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Roof type</label>
-            <div class="opt-grid two" id="optRoof">
-              <div class="opt-card" data-v="pitched">Pitched Truss Roof</div>
-              <div class="opt-card" data-v="flat">Flat / Warm Roof</div>
-            </div>
-          </div>
+          <div class="step-label">Step 1 of 6</div>
+          <div class="step-title">What are you building?</div>
+          <div class="step-sub">This sets a realistic size range for your garden — you can fine-tune the exact dimensions next.</div>
+          <div class="opt-grid one" id="optType"></div>
         </div>
 
-        <!-- STEP 2: Windows & doors -->
+        <!-- STEP 2: Size & roof -->
         <div class="step-panel" data-step="2" style="display:none;">
-          <div class="step-label">Step 2 of 5</div>
-          <div class="step-title">Windows &amp; doors</div>
-          <div class="step-sub">Choose how many openings per elevation and their size. Positions are shown approximately in the 3D preview.</div>
-
-          <div class="win-row">
-            <div class="wname">Standard windows<small>1.2m × 1.2m</small></div>
-            <div class="stepper"><button data-w="std" data-d="-1">–</button><div class="count" id="cntStd">2</div><button data-w="std" data-d="1">+</button></div>
+          <div class="step-label">Step 2 of 6</div>
+          <div class="step-title">Size &amp; roof shape</div>
+          <div class="step-sub" id="sizeHint">Set the footprint. We manufacture in modular bays, so this stays within realistic garden-building limits.</div>
+          <div class="field">
+            <label>Width <span class="val" id="valWidth">4.0 m</span></label>
+            <input type="range" id="rngWidth" min="2" max="8" step="0.2" value="4">
           </div>
-          <div class="win-row">
-            <div class="wname">Large windows<small>1.8m × 1.5m</small></div>
-            <div class="stepper"><button data-w="lrg" data-d="-1">–</button><div class="count" id="cntLrg">1</div><button data-w="lrg" data-d="1">+</button></div>
+          <div class="field">
+            <label>Length <span class="val" id="valLength">3.0 m</span></label>
+            <input type="range" id="rngLength" min="2" max="8" step="0.2" value="3">
           </div>
-          <div class="win-row">
-            <div class="wname">Rooflights<small>0.8m × 1.2m</small></div>
-            <div class="stepper"><button data-w="roof" data-d="-1">–</button><div class="count" id="cntRoof">0</div><button data-w="roof" data-d="1">+</button></div>
+          <div class="field">
+            <label>Ceiling height</label>
+            <div class="opt-grid two" id="optHeight">
+              <div class="opt-card" data-v="2.4">Standard<br><small>2.4m eaves</small></div>
+              <div class="opt-card" data-v="2.7">Vaulted<br><small>2.7m eaves</small></div>
+            </div>
           </div>
-          <div class="win-row">
-            <div class="wname">External doors<small>Single leaf, 0.9m</small></div>
-            <div class="stepper"><button data-w="door" data-d="-1">–</button><div class="count" id="cntDoor">1</div><button data-w="door" data-d="1">+</button></div>
-          </div>
-          <div class="win-row">
-            <div class="wname">Bi-fold / patio doors<small>3m opening</small></div>
-            <div class="stepper"><button data-w="bifold" data-d="-1">–</button><div class="count" id="cntBifold">0</div><button data-w="bifold" data-d="1">+</button></div>
+          <div class="field">
+            <label>Roof shape</label>
+            <div class="opt-grid two" id="optRoof">
+              <div class="opt-card" data-v="pitched">Pitched<br><small>Gable timber roof</small></div>
+              <div class="opt-card" data-v="flat">Flat<br><small>EPDM membrane roof</small></div>
+            </div>
           </div>
         </div>
 
-        <!-- STEP 3: Cladding -->
+        <!-- STEP 3: Windows & doors -->
         <div class="step-panel" data-step="3" style="display:none;">
-          <div class="step-label">Step 3 of 5</div>
+          <div class="step-label">Step 3 of 6</div>
+          <div class="step-title">Windows &amp; doors</div>
+          <div class="step-sub">Choose how many openings you'd like. Shown approximately across the front and side elevations in the 3D preview.</div>
+          <div class="win-row"><div class="wname">Standard windows<small>1.0m × 1.1m aluminium</small></div><div class="stepper"><button data-w="std" data-d="-1">–</button><div class="count" id="cntStd">1</div><button data-w="std" data-d="1">+</button></div></div>
+          <div class="win-row"><div class="wname">Large windows<small>1.6m × 1.4m aluminium</small></div><div class="stepper"><button data-w="lrg" data-d="-1">–</button><div class="count" id="cntLrg">1</div><button data-w="lrg" data-d="1">+</button></div></div>
+          <div class="win-row"><div class="wname">Rooflights<small>0.6m × 1.0m, pitched roofs only</small></div><div class="stepper"><button data-w="roof" data-d="-1">–</button><div class="count" id="cntRoof">0</div><button data-w="roof" data-d="1">+</button></div></div>
+          <div class="win-row"><div class="wname">External doors<small>Single leaf, composite</small></div><div class="stepper"><button data-w="door" data-d="-1">–</button><div class="count" id="cntDoor">1</div><button data-w="door" data-d="1">+</button></div></div>
+          <div class="win-row"><div class="wname">Bi-fold / patio doors<small>Up to 3m glazed opening</small></div><div class="stepper"><button data-w="bifold" data-d="-1">–</button><div class="count" id="cntBifold">0</div><button data-w="bifold" data-d="1">+</button></div></div>
+        </div>
+
+        <!-- STEP 4: Cladding -->
+        <div class="step-panel" data-step="4" style="display:none;">
+          <div class="step-label">Step 4 of 6</div>
           <div class="step-title">Cladding &amp; colour</div>
           <div class="step-sub">Choose your tongue &amp; groove external finish and colour treatment.</div>
-
           <div class="field">
             <label>Cladding profile</label>
             <div class="opt-grid" id="optClad">
-              <div class="opt-card" data-v="larch">Siberian Larch T&amp;G</div>
-              <div class="opt-card" data-v="cedar">Western Red Cedar T&amp;G</div>
-              <div class="opt-card" data-v="composite">Composite Board</div>
+              <div class="opt-card" data-v="larch">Siberian Larch<br><small>Vertical T&amp;G</small></div>
+              <div class="opt-card" data-v="cedar">Western Red Cedar<br><small>Vertical T&amp;G</small></div>
+              <div class="opt-card" data-v="composite">Composite Board<br><small>Low-maintenance</small></div>
             </div>
           </div>
           <div class="field">
             <label>Finish colour</label>
             <div class="opt-grid" id="optColour">
-              <div class="opt-card" data-v="#B48A5C"><div class="swatch" style="background:#B48A5C;"></div>Natural Timber</div>
+              <div class="opt-card" data-v="#B08655"><div class="swatch" style="background:#B08655;"></div>Natural Timber</div>
               <div class="opt-card" data-v="#3A3F3A"><div class="swatch" style="background:#3A3F3A;"></div>Charcoal</div>
               <div class="opt-card" data-v="#6E7A63"><div class="swatch" style="background:#6E7A63;"></div>Sage Green</div>
-              <div class="opt-card" data-v="#8C1A1F"><div class="swatch" style="background:#8C1A1F;"></div>Barn Red</div>
+              <div class="opt-card" data-v="#7A2A24"><div class="swatch" style="background:#7A2A24;"></div>Barn Red</div>
               <div class="opt-card" data-v="#D9D5C8"><div class="swatch" style="background:#D9D5C8;"></div>Chalk White</div>
               <div class="opt-card" data-v="#2B2E2C"><div class="swatch" style="background:#2B2E2C;"></div>Graphite</div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 4: Insulation -->
-        <div class="step-panel" data-step="4" style="display:none;">
-          <div class="step-label">Step 4 of 5</div>
+        <!-- STEP 5: Insulation -->
+        <div class="step-panel" data-step="5" style="display:none;">
+          <div class="step-label">Step 5 of 6</div>
           <div class="step-title">Insulation &amp; interior spec</div>
           <div class="step-sub">Insulation tier affects both running costs and price per square metre.</div>
-
           <div class="field">
             <label>Insulation tier</label>
             <div class="opt-grid" id="optInsul">
-              <div class="opt-card" data-v="standard">Standard<br><small style="font-weight:500;">Building Regs</small></div>
-              <div class="opt-card" data-v="premium">Premium<br><small style="font-weight:500;">Enhanced U-values</small></div>
-              <div class="opt-card" data-v="passive">Passive<br><small style="font-weight:500;">Near Passive-House</small></div>
+              <div class="opt-card" data-v="standard">Standard<br><small>Building Regs</small></div>
+              <div class="opt-card" data-v="premium">Premium<br><small>Enhanced U-values</small></div>
+              <div class="opt-card" data-v="passive">Passive<br><small>Near Passive-House</small></div>
             </div>
           </div>
           <div class="field">
             <label>Interior fit-out</label>
             <div class="opt-grid two" id="optFitout">
-              <div class="opt-card" data-v="shell">Shell Only<br><small style="font-weight:500;">You finish internally</small></div>
-              <div class="opt-card" data-v="full">Full Fit-Out<br><small style="font-weight:500;">Plastered, wired, plumbed</small></div>
+              <div class="opt-card" data-v="shell">Shell Only<br><small>You finish internally</small></div>
+              <div class="opt-card" data-v="full">Full Fit-Out<br><small>Plastered, wired, plumbed</small></div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 5: Summary -->
-        <div class="step-panel" data-step="5" style="display:none;">
-          <div class="step-label">Step 5 of 5</div>
+        <!-- STEP 6: Summary -->
+        <div class="step-panel" data-step="6" style="display:none;">
+          <div class="step-label">Step 6 of 6</div>
           <div class="step-title">Summary &amp; your details</div>
           <div class="step-sub">Review your build, then send it to our modular team — we'll follow up with a firm quotation and site survey.</div>
-
           <div class="summary-grid" id="summaryGrid"></div>
-
           <form id="leadForm">
             <div class="form-grid">
               <div><label>Full name</label><input type="text" required placeholder="Jane Smith"></div>
@@ -547,7 +395,7 @@
               <div class="full"><label>Anything else we should know?</label><textarea rows="3" placeholder="Planning status, timeline, site access..."></textarea></div>
             </div>
             <div class="nav-buttons">
-              <button type="button" class="btn-outline" id="backFrom5">← Back</button>
+              <button type="button" class="btn-outline" id="backFrom6">← Back</button>
               <button type="submit" class="btn-solid">Send My Design →</button>
             </div>
           </form>
@@ -562,22 +410,13 @@
       <div class="config-right">
         <div class="viewer">
           <div id="canvas-holder"></div>
-          <div class="viewer-controls">
-            <div class="vc-btn" id="rotLeft">⟲</div>
-            <div class="vc-btn" id="rotRight">⟳</div>
-          </div>
-          <div class="dims-tag" id="dimsTag">6.0 × 8.0 m</div>
+          <div class="viewer-hint">🖱 Drag to rotate · Scroll to zoom</div>
+          <div class="dims-tag" id="dimsTag">4.0 × 3.0 m</div>
         </div>
         <div class="price-panel">
           <div class="price-row">
-            <div>
-              <div class="lbl">Estimated Build Price</div>
-              <div class="amt" id="priceAmt">£0<small>+VAT</small></div>
-            </div>
-            <div style="text-align:right;">
-              <div class="lbl">Floor Area</div>
-              <div style="font-family:'Archivo Black';font-size:20px;" id="areaAmt">0 m²</div>
-            </div>
+            <div><div class="lbl">Estimated Build Price</div><div class="amt" id="priceAmt">£0<small>+VAT</small></div></div>
+            <div style="text-align:right;"><div class="lbl">Floor Area</div><div style="font-family:'Archivo Black';font-size:20px;" id="areaAmt">0 m²</div></div>
           </div>
           <div class="price-note">Indicative estimate only, based on standard groundworks and access. Final price confirmed after site survey.</div>
         </div>
@@ -588,16 +427,13 @@
 
 <section>
   <div class="section-inner">
-    <div class="section-head">
-      <span class="kicker">Recent Configurations</span>
-      <h2>What people are building.</h2>
-    </div>
+    <div class="section-head"><span class="kicker">Recent Configurations</span><h2>What people are building.</h2></div>
     <div class="gallery-grid">
-      <div class="gcard tall" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C7355,#5C4A38);"><span>Two-Storey Family Home — Larch</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#3A3F3A,#20231F);"><span>Garden Studio — Charcoal</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#6E7A63,#48513F);"><span>Annexe — Sage Cedar</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#D9D5C8,#B7B3A5);"><span>Home Office — Chalk White</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C1A1F,#5C1013);"><span>Single Storey — Barn Red</span></div>
+      <div class="gcard tall" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C7355,#5C4A38);"><span>6×5m Garden Annexe — Larch</span></div>
+      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#3A3F3A,#20231F);"><span>4×3m Garden Office — Charcoal</span></div>
+      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#6E7A63,#48513F);"><span>5×4m Garden Room — Sage</span></div>
+      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#D9D5C8,#B7B3A5);"><span>3×2.5m Studio — Chalk White</span></div>
+      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#7A2A24,#4C1815);"><span>8×8m Modular Home — Barn Red</span></div>
     </div>
   </div>
 </section>
@@ -607,17 +443,11 @@
     <div class="footer-grid">
       <div>
         <div class="logo" style="margin-bottom:14px;"><div class="mark"></div><div class="word" style="color:#fff;">HALDANE FISHER <span>MODULAR</span></div></div>
-        <p style="font-size:13.5px;line-height:1.6;max-width:320px;">Part of the Haldane Fisher group — manufacturing roof trusses, spacejoists and now fully modular buildings across Northern Ireland and the Republic of Ireland.</p>
+        <p style="font-size:13.5px;line-height:1.6;max-width:320px;">Part of the Haldane Fisher group — manufacturing roof trusses, spacejoists and now garden-scale modular buildings across Northern Ireland and the Republic of Ireland.</p>
       </div>
-      <div><h5>Modular</h5>
-        <a href="#configurator">Design Your Build</a><a href="#">Homes</a><a href="#">Garden Rooms</a><a href="#">Commercial Units</a>
-      </div>
-      <div><h5>Company</h5>
-        <a href="#">About Haldane Fisher</a><a href="#">Manufacturing</a><a href="#">Careers</a><a href="#">Branch Locator</a>
-      </div>
-      <div><h5>Get In Touch</h5>
-        <a href="#">028 xxxx xxxx</a><a href="#">modular@haldane-fisher.com</a><a href="#">Request a Callback</a>
-      </div>
+      <div><h5>Modular</h5><a href="#configurator">Design Your Build</a><a href="#">Garden Rooms</a><a href="#">Annexes</a><a href="#">Sheds</a></div>
+      <div><h5>Company</h5><a href="#">About Haldane Fisher</a><a href="#">Manufacturing</a><a href="#">Careers</a><a href="#">Branch Locator</a></div>
+      <div><h5>Get In Touch</h5><a href="#">028 xxxx xxxx</a><a href="#">modular@haldane-fisher.com</a><a href="#">Request a Callback</a></div>
     </div>
     <div class="footer-bottom">
       <span>© 2026 Haldane Fisher. Modular design tool — internal prototype for review.</span>
@@ -627,179 +457,352 @@
 </footer>
 
 <script>
+/* ============ BUILDING TYPE PRESETS ============ */
+const BUILDING_TYPES = {
+  shed:   { label:'Garden Shed / Storage',        icon:'🧰', hint:'Typically 2–4m — tucks into any garden corner',
+            wMin:2, wMax:4, lMin:2, lMax:4, wDef:3, lDef:2.4, roofDef:'pitched',
+            win:{std:1,lrg:0,roof:0,door:1,bifold:0} },
+  office: { label:'Garden Office / Studio',       icon:'💻', hint:'Typically 2.5–5m — a working space at the end of the garden',
+            wMin:2.5, wMax:5, lMin:2.5, lMax:4.5, wDef:4, lDef:3, roofDef:'flat',
+            win:{std:1,lrg:2,roof:0,door:1,bifold:0} },
+  room:   { label:'Garden Room',                  icon:'🛋', hint:'Typically 3–6m — playroom, gym or guest space',
+            wMin:3, wMax:6, lMin:3, lMax:6, wDef:5, lDef:4, roofDef:'flat',
+            win:{std:2,lrg:1,roof:0,door:1,bifold:1} },
+  annexe: { label:'Garden Annexe / Granny Flat',   icon:'🏠', hint:'Typically 4–8m — self-contained living space with kitchenette + bathroom',
+            wMin:4, wMax:8, lMin:4, lMax:8, wDef:6, lDef:6, roofDef:'pitched',
+            win:{std:3,lrg:1,roof:1,door:1,bifold:1} },
+  home:   { label:'Compact Modular Home',         icon:'🏡', hint:'Up to 8×8m — the largest single-storey unit we manufacture for garden plots',
+            wMin:5, wMax:8, lMin:5, lMax:8, wDef:8, lDef:8, roofDef:'pitched',
+            win:{std:4,lrg:2,roof:1,door:1,bifold:1} },
+};
+
 /* ============ STATE ============ */
 const state = {
-  width: 6.0, length: 8.0, height: 2.4, roof: 'pitched',
-  win: { std: 2, lrg: 1, roof: 0, door: 1, bifold: 0 },
-  cladding: 'larch', colour: '#B48A5C',
-  insulation: 'standard', fitout: 'shell'
+  type:'room', width:5, length:4, eaves:2.4, roof:'flat',
+  win:{ std:2, lrg:1, roof:0, door:1, bifold:1 },
+  cladding:'larch', colour:'#B08655',
+  insulation:'standard', fitout:'shell'
 };
 let currentStep = 1;
-const totalSteps = 5;
+const totalSteps = 6;
 
 /* ============ PRICE LOGIC ============ */
-const CLAD_RATE = { larch: 0, cedar: 18, composite: 25 };
-const INSUL_BASE = { standard: 1300, premium: 1550, passive: 1850 };
-const WIN_COST = { std: 150, lrg: 250, roof: 320, door: 900, bifold: 2400 };
-const FITOUT_RATE = { shell: 0, full: 480 };
-const ROOF_ADJ = { pitched: 0, flat: -0.05 };
+const CLAD_RATE = { larch:0, cedar:18, composite:25 };
+const INSUL_BASE = { standard:1300, premium:1550, passive:1850 };
+const WIN_COST = { std:150, lrg:250, roof:320, door:900, bifold:2400 };
+const FITOUT_RATE = { shell:0, full:480 };
+const ROOF_ADJ = { pitched:0, flat:-0.05 };
 
 function computeAreaAndPrice(){
-  const storeys = state.height > 3 ? 2 : 1;
-  const footprint = state.width * state.length;
-  const floorArea = footprint * storeys;
+  const floorArea = state.width * state.length;
   const perimeter = 2 * (state.width + state.length);
-  const wallArea = perimeter * state.height;
-
+  const wallArea = perimeter * state.eaves;
   let base = INSUL_BASE[state.insulation] * floorArea;
   base *= (1 + ROOF_ADJ[state.roof]);
-
   let claddingCost = wallArea * CLAD_RATE[state.cladding];
   let windowsCost = 0;
   Object.keys(state.win).forEach(k => windowsCost += state.win[k] * WIN_COST[k]);
   let fitoutCost = FITOUT_RATE[state.fitout] * floorArea;
-
-  const total = base + claddingCost + windowsCost + fitoutCost;
-  return { floorArea, total };
+  return { floorArea, total: base + claddingCost + windowsCost + fitoutCost };
 }
-
-function fmtGBP(n){
-  return '£' + Math.round(n).toLocaleString('en-GB');
-}
-
+function fmtGBP(n){ return '£' + Math.round(n).toLocaleString('en-GB'); }
 function updatePricePanel(){
   const { floorArea, total } = computeAreaAndPrice();
-  document.getElementById('areaAmt').textContent = floorArea.toFixed(0) + ' m²';
+  document.getElementById('areaAmt').textContent = floorArea.toFixed(1) + ' m²';
   document.getElementById('priceAmt').innerHTML = fmtGBP(total) + '<small>+VAT</small>';
   document.getElementById('dimsTag').textContent = state.width.toFixed(1) + ' × ' + state.length.toFixed(1) + ' m';
 }
 
-/* ============ THREE.JS SCENES ============ */
-function makeScene(holderId){
+/* ============ PROCEDURAL TEXTURES ============ */
+function makeCladTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#e9e9e9'; ctx.fillRect(0,0,256,256);
+  const plankW = 22;
+  for(let x=0; x<256; x+=plankW){
+    const shade = 205 + Math.floor(Math.random()*45);
+    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+    ctx.fillRect(x,0,plankW-1,256);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(x+plankW-2,0,2,256);
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    for(let i=0;i<5;i++){
+      ctx.beginPath();
+      const gy = Math.random()*256;
+      ctx.moveTo(x+2, gy);
+      ctx.bezierCurveTo(x+8,gy+14,x+16,gy-14,x+plankW-3, gy+(Math.random()*24-12));
+      ctx.stroke();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeRoofTexture(dark){
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = dark ? '#2c2f2e' : '#4a4e4c'; ctx.fillRect(0,0,128,128);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2;
+  for(let y=0;y<128;y+=14){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(128,y); ctx.stroke(); }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeDeckTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#B79068'; ctx.fillRect(0,0,256,256);
+  for(let y=0;y<256;y+=18){
+    const shade = 150 + Math.floor(Math.random()*40);
+    ctx.fillStyle = `rgb(${shade+30},${shade},${shade-40})`;
+    ctx.fillRect(0,y,256,16);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(0,y+16,256,2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeGrassTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5C8A46'; ctx.fillRect(0,0,256,256);
+  for(let i=0;i<4500;i++){
+    const x = Math.random()*256, y = Math.random()*256;
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,40,0,0.10)';
+    ctx.fillRect(x,y,2,2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(10,10);
+  return tex;
+}
+
+/* ============ SCENE SETUP ============ */
+function makeScene(holderId, interactive){
   const holder = document.getElementById(holderId);
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, holder.clientWidth / holder.clientHeight, 0.1, 100);
-  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  scene.background = new THREE.Color(0xBFE3F0);
+  scene.fog = new THREE.Fog(0xBFE3F0, 16, 34);
+
+  const camera = new THREE.PerspectiveCamera(38, holder.clientWidth/holder.clientHeight, 0.1, 100);
+  const renderer = new THREE.WebGLRenderer({ antialias:true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(holder.clientWidth, holder.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
   holder.appendChild(renderer.domElement);
 
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x223322, 1.1);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x6b8a55, 0.9);
   scene.add(hemi);
-  const dir = new THREE.DirectionalLight(0xffffff, 1.1);
-  dir.position.set(6,10,6);
-  scene.add(dir);
+  const sun = new THREE.DirectionalLight(0xfff3dd, 1.4);
+  sun.position.set(8, 11, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.left = -10; sun.shadow.camera.right = 10;
+  sun.shadow.camera.top = 10; sun.shadow.camera.bottom = -10;
+  sun.shadow.bias = -0.0015;
+  scene.add(sun);
+
+  const groundTex = makeGrassTexture();
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(16,40), new THREE.MeshStandardMaterial({ map: groundTex, roughness:1 }));
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // simple garden context: low fence + bushes
+  const fenceMat = new THREE.MeshStandardMaterial({ color:0x7A6248, roughness:0.9 });
+  const fence = new THREE.Mesh(new THREE.BoxGeometry(14,1.1,0.1), fenceMat);
+  fence.position.set(0, 0.55, -7);
+  fence.castShadow = true;
+  scene.add(fence);
+  const bushMat = new THREE.MeshStandardMaterial({ color:0x3F6B34, roughness:1 });
+  [[-6.5,-6.5],[6.5,-6.5],[-6.8,4],[7,3]].forEach(([x,z])=>{
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.7+Math.random()*0.3,10,8), bushMat);
+    bush.position.set(x, 0.6, z);
+    bush.castShadow = true;
+    scene.add(bush);
+  });
 
   const group = new THREE.Group();
   scene.add(group);
 
-  const groundGeo = new THREE.CircleGeometry(14, 32);
-  const groundMat = new THREE.MeshStandardMaterial({ color:0x14301F, roughness:1 });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI/2;
-  ground.position.y = -0.01;
-  scene.add(ground);
+  let controls = null;
+  if(interactive && window.THREE.OrbitControls){
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 3;
+    controls.maxDistance = 22;
+    controls.maxPolarAngle = Math.PI/2 - 0.03;
+    controls.target.set(0, 1.2, 0);
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.2;
+    renderer.domElement.addEventListener('pointerdown', ()=> controls.autoRotate = false);
+  }
 
-  return { holder, scene, camera, renderer, group };
+  return { holder, scene, camera, renderer, group, controls };
 }
 
-const heroScene = makeScene('hero-canvas-holder');
-const mainScene = makeScene('canvas-holder');
+const heroScene = makeScene('hero-canvas-holder', false);
+const mainScene = makeScene('canvas-holder', true);
+
+/* ============ BUILDING GEOMETRY ============ */
+function addWindow(group, materials, x, y, z, ww, wh, rotY){
+  const grp = new THREE.Group();
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(ww, wh, 0.04), materials.glass);
+  grp.add(glass);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(ww+0.08, wh+0.08, 0.05), materials.frame);
+  frame.position.z = -0.01;
+  grp.add(frame);
+  const sill = new THREE.Mesh(new THREE.BoxGeometry(ww+0.16, 0.05, 0.14), materials.frame);
+  sill.position.set(0, -wh/2-0.05, 0.05);
+  grp.add(sill);
+  grp.position.set(x,y,z);
+  grp.rotation.y = rotY || 0;
+  grp.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
+  group.add(grp);
+}
 
 function buildHouse(sceneObj, s){
   const { group } = sceneObj;
   while(group.children.length) group.remove(group.children[0]);
 
-  const w = s.width, l = s.length, h = s.height;
-  const wallMat = new THREE.MeshStandardMaterial({ color: s.colour, roughness:0.85 });
-  const trimMat = new THREE.MeshStandardMaterial({ color: 0xF3F1E8, roughness:0.7 });
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0x9FCBE0, roughness:0.1, metalness:0.3, transparent:true, opacity:0.85 });
-  const doorMat = new THREE.MeshStandardMaterial({ color: 0x2B2E2C, roughness:0.6 });
-  const roofMat = new THREE.MeshStandardMaterial({ color: 0x4A4E48, roughness:0.75 });
+  const w = s.width, l = s.length, h = s.eaves;
+  const overhang = 0.3;
+  const pitchRad = 27 * Math.PI/180;
 
-  // base / plinth
-  const plinth = new THREE.Mesh(new THREE.BoxGeometry(w+0.2, 0.2, l+0.2), trimMat);
-  plinth.position.y = -0.1;
+  const cladTex = makeCladTexture();
+  cladTex.repeat.set(Math.max(2, w*1.4), Math.max(1, h*1.4));
+  const wallMat = new THREE.MeshStandardMaterial({ map:cladTex, color:s.colour, roughness:0.88, metalness:0.02 });
+
+  const frameMat = new THREE.MeshStandardMaterial({ color:0x2B2E2C, roughness:0.45, metalness:0.25 });
+  const glassMat = new THREE.MeshPhysicalMaterial({ color:0xBFE3F0, roughness:0.05, metalness:0.1, transparent:true, opacity:0.55, clearcoat:0.6, envMapIntensity:1.2 });
+  const roofTex = makeRoofTexture(s.roof==='flat');
+  roofTex.repeat.set(Math.max(2,l), Math.max(2,w));
+  const roofMat = new THREE.MeshStandardMaterial({ map:roofTex, color:0xffffff, roughness:0.85 });
+  const deckTex = makeDeckTexture();
+  deckTex.repeat.set(w/0.9, 1.6/0.35);
+  const deckMat = new THREE.MeshStandardMaterial({ map:deckTex, roughness:0.9 });
+  const plinthMat = new THREE.MeshStandardMaterial({ color:0x9a9a90, roughness:0.9 });
+  const doorMat = new THREE.MeshStandardMaterial({ color:0x24211f, roughness:0.5, metalness:0.1 });
+  const handleMat = new THREE.MeshStandardMaterial({ color:0xC9CDC6, roughness:0.3, metalness:0.7 });
+
+  // plinth
+  const plinth = new THREE.Mesh(new THREE.BoxGeometry(w+0.12,0.14,l+0.12), plinthMat);
+  plinth.position.y = 0.07;
+  plinth.receiveShadow = true;
   group.add(plinth);
 
   // walls
-  const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), wallMat);
-  box.position.y = h/2;
-  group.add(box);
+  const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), wallMat);
+  wallMesh.position.y = h/2 + 0.14;
+  wallMesh.castShadow = true; wallMesh.receiveShadow = true;
+  group.add(wallMesh);
+  const wallTopY = h + 0.14;
 
   // roof
   if(s.roof === 'pitched'){
-    const roofHeight = Math.min(w,l) * 0.3;
-    const roofGeo = new THREE.CylinderGeometry(0, Math.sqrt((w/2)*(w/2)+roofHeight*roofHeight), l+0.6, 4, 1);
-    // Build a simple prism roof instead using ExtrudeGeometry-like approach: use a wedge via BufferGeometry
-    const shape = new THREE.Shape();
-    shape.moveTo(-w/2-0.3, 0);
-    shape.lineTo(0, roofHeight);
-    shape.lineTo(w/2+0.3, 0);
-    shape.lineTo(-w/2-0.3, 0);
-    const extrudeSettings = { depth: l+0.6, bevelEnabled:false };
-    const roofGeo2 = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    roofGeo2.rotateY(Math.PI/2);
-    roofGeo2.translate(0, h, -(l+0.6)/2 + (l+0.6)/2 - (l+0.6)/2);
-    const roof = new THREE.Mesh(roofGeo2, roofMat);
-    roof.position.set(0, h, l/2+0.3);
-    group.add(roof);
+    const roofRise = (w/2) * Math.tan(pitchRad);
+    const halfSpan = w/2 + overhang;
+    const slantLen = Math.sqrt(halfSpan*halfSpan + roofRise*roofRise);
+    const actualAngle = Math.atan2(roofRise, halfSpan);
+    const roofDepth = l + overhang*2;
+
+    [1,-1].forEach(sign=>{
+      const plane = new THREE.Mesh(new THREE.BoxGeometry(slantLen, 0.07, roofDepth), roofMat);
+      plane.position.set(sign*halfSpan/2, wallTopY + roofRise/2, 0);
+      plane.rotation.z = -sign*actualAngle;
+      plane.castShadow = true; plane.receiveShadow = true;
+      group.add(plane);
+    });
+
+    const gShape = new THREE.Shape();
+    gShape.moveTo(-w/2, 0); gShape.lineTo(w/2, 0); gShape.lineTo(0, roofRise); gShape.lineTo(-w/2,0);
+    const gableGeo = new THREE.ExtrudeGeometry(gShape, { depth:0.05, bevelEnabled:false });
+    [1,-1].forEach(sign=>{
+      const gable = new THREE.Mesh(gableGeo, wallMat);
+      gable.position.set(0, wallTopY, sign>0 ? l/2 : -l/2-0.05);
+      gable.castShadow = true; gable.receiveShadow = true;
+      group.add(gable);
+    });
   } else {
-    const flat = new THREE.Mesh(new THREE.BoxGeometry(w+0.4, 0.25, l+0.4), roofMat);
-    flat.position.y = h + 0.12;
+    const flat = new THREE.Mesh(new THREE.BoxGeometry(w+overhang*2, 0.12, l+overhang*2), roofMat);
+    flat.position.y = wallTopY + 0.06;
+    flat.castShadow = true; flat.receiveShadow = true;
     group.add(flat);
+    const fascia = new THREE.Mesh(new THREE.BoxGeometry(w+overhang*2, 0.22, 0.03), frameMat);
+    fascia.position.set(0, wallTopY - 0.02, l/2+overhang);
+    group.add(fascia);
   }
 
-  // windows - distribute along front (south) wall
-  const frontZ = l/2 + 0.02;
-  const winTypes = [];
-  for(let i=0;i<s.win.std;i++) winTypes.push({size:[1.1,1.1], key:'std'});
-  for(let i=0;i<s.win.lrg;i++) winTypes.push({size:[1.7,1.4], key:'lrg'});
-  const count = winTypes.length || 1;
-  winTypes.forEach((wt, idx)=>{
-    const [ww, wh] = wt.size;
-    const spacing = w / (winTypes.length + 1);
-    const x = -w/2 + spacing * (idx+1);
-    const win = new THREE.Mesh(new THREE.BoxGeometry(ww, wh, 0.05), glassMat);
-    win.position.set(x, h*0.55, frontZ);
-    group.add(win);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(ww+0.08, wh+0.08, 0.03), trimMat);
-    frame.position.set(x, h*0.55, frontZ-0.01);
-    group.add(frame);
-  });
+  // deck
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w,4.5), 0.1, 1.6), deckMat);
+  deck.position.set(0, 0.05, l/2 + 0.8);
+  deck.receiveShadow = true; deck.castShadow = true;
+  group.add(deck);
+  for(let dx=-Math.min(w,4.5)/2+0.15; dx<=Math.min(w,4.5)/2-0.1; dx+=0.9){
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.15,0.08), plinthMat);
+    leg.position.set(dx, -0.02, l/2+1.5);
+    group.add(leg);
+  }
 
+  // windows on front wall
+  const frontZ = l/2 + 0.03;
+  const openings = [];
+  for(let i=0;i<s.win.std;i++) openings.push({w:1.0, h:1.1});
+  for(let i=0;i<s.win.lrg;i++) openings.push({w:1.6, h:1.4});
+  if(openings.length){
+    const spacing = w / (openings.length+1);
+    openings.forEach((o,idx)=>{
+      const x = -w/2 + spacing*(idx+1);
+      addWindow(group, {glass:glassMat, frame:frameMat}, x, h*0.52+0.14, frontZ, o.w, o.h, 0);
+    });
+  }
   // door
   if(s.win.door > 0){
-    const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.0, 0.06), doorMat);
-    door.position.set(-w/2 + 0.7, 1.0, frontZ);
+    const doorW = 0.95, doorH = 2.0;
+    const doorX = -w/2 + doorW/2 + 0.25;
+    const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.06), doorMat);
+    door.position.set(doorX, doorH/2+0.14, frontZ);
+    door.castShadow = true;
     group.add(door);
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.28,8), handleMat);
+    handle.rotation.z = Math.PI/2;
+    handle.position.set(doorX+doorW/2-0.08, doorH/2+0.14, frontZ+0.045);
+    group.add(handle);
   }
   // bifold on side wall
   if(s.win.bifold > 0){
-    const bw = Math.min(3, l-1);
-    const bifold = new THREE.Mesh(new THREE.BoxGeometry(0.05, h*0.75, bw), glassMat);
-    bifold.position.set(w/2+0.02, h*0.4, 0);
-    group.add(bifold);
+    const bw = Math.min(2.6, l-1.2);
+    addWindow(group, {glass:glassMat, frame:frameMat}, w/2+0.03, h*0.42+0.14, 0, bw, h*0.72, Math.PI/2);
   }
-  // rooflights
-  for(let i=0;i<s.win.roof;i++){
-    const rl = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.05,1.1), glassMat);
-    rl.position.set(-w/4 + i*1.2, h+0.28, 0);
-    group.add(rl);
+  // rooflights (pitched only, sit on right roof slope)
+  if(s.roof === 'pitched'){
+    for(let i=0;i<s.win.roof;i++){
+      const roofRise = (w/2) * Math.tan(pitchRad);
+      const rl = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.04,1.0), glassMat);
+      rl.position.set(w/4, wallTopY + roofRise*0.55, -l/4 + i*1.3);
+      rl.rotation.z = -pitchRad;
+      group.add(rl);
+    }
   }
 
-  // frame camera
-  const maxDim = Math.max(w,l,h*2);
-  sceneObj.camera.position.set(maxDim*0.9, maxDim*0.65, maxDim*1.1);
-  sceneObj.camera.lookAt(0, h*0.4, 0);
+  // camera framing
+  const maxDim = Math.max(w, l, h*2.2);
+  sceneObj.camera.position.set(maxDim*0.95, maxDim*0.62, maxDim*1.15);
+  sceneObj.camera.lookAt(0, h*0.5, 0);
+  if(sceneObj.controls){ sceneObj.controls.target.set(0, h*0.5+0.1, 0); sceneObj.controls.update(); }
 }
 
-let rotationY = 0.6;
+let heroRotation = 0.5;
 function renderLoop(){
-  [heroScene, mainScene].forEach(s=>{
-    s.group.rotation.y = rotationY;
-    s.renderer.render(s.scene, s.camera);
-  });
+  heroScene.group.rotation.y = heroRotation;
+  heroRotation += 0.0035;
+  heroScene.renderer.render(heroScene.scene, heroScene.camera);
+  if(mainScene.controls) mainScene.controls.update();
+  mainScene.renderer.render(mainScene.scene, mainScene.camera);
   requestAnimationFrame(renderLoop);
 }
 
@@ -818,10 +821,42 @@ window.addEventListener('resize', ()=>{
   });
 });
 
-document.getElementById('rotLeft').onclick = ()=> rotationY -= 0.5;
-document.getElementById('rotRight').onclick = ()=> rotationY += 0.5;
+/* ============ UI: BUILDING TYPE STEP ============ */
+const optTypeEl = document.getElementById('optType');
+Object.keys(BUILDING_TYPES).forEach(key=>{
+  const t = BUILDING_TYPES[key];
+  const card = document.createElement('div');
+  card.className = 'opt-card type-card' + (key === state.type ? ' selected' : '');
+  card.dataset.v = key;
+  card.innerHTML = `<div class="ticon">${t.icon}</div><div class="ttext"><b>${t.label}</b><span>${t.hint}</span></div>`;
+  card.addEventListener('click', ()=>{
+    optTypeEl.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    applyBuildingType(key);
+  });
+  optTypeEl.appendChild(card);
+});
 
-/* ============ UI WIRING ============ */
+function applyBuildingType(key){
+  const t = BUILDING_TYPES[key];
+  state.type = key;
+  state.width = t.wDef; state.length = t.lDef; state.roof = t.roofDef;
+  state.win = Object.assign({}, t.win);
+
+  const rw = document.getElementById('rngWidth'), rl = document.getElementById('rngLength');
+  rw.min = t.wMin; rw.max = t.wMax; rw.value = t.wDef;
+  rl.min = t.lMin; rl.max = t.lMax; rl.value = t.lDef;
+  document.getElementById('valWidth').textContent = t.wDef.toFixed(1) + ' m';
+  document.getElementById('valLength').textContent = t.lDef.toFixed(1) + ' m';
+  document.getElementById('sizeHint').textContent = `${t.label}: realistic range is ${t.wMin}–${t.wMax}m wide × ${t.lMin}–${t.lMax}m long.`;
+
+  document.getElementById('optRoof').querySelectorAll('.opt-card').forEach(c=> c.classList.toggle('selected', c.dataset.v === t.roofDef));
+  Object.keys(countIds).forEach(k=> document.getElementById(countIds[k]).textContent = state.win[k]);
+
+  refreshAll();
+}
+
+/* ============ GENERIC OPTION CARDS ============ */
 function selectOptCard(container, defaultVal, onSelect){
   const cards = container.querySelectorAll('.opt-card');
   cards.forEach(c=>{
@@ -834,7 +869,6 @@ function selectOptCard(container, defaultVal, onSelect){
     });
   });
 }
-
 document.getElementById('rngWidth').addEventListener('input', e=>{
   state.width = parseFloat(e.target.value);
   document.getElementById('valWidth').textContent = state.width.toFixed(1) + ' m';
@@ -845,8 +879,7 @@ document.getElementById('rngLength').addEventListener('input', e=>{
   document.getElementById('valLength').textContent = state.length.toFixed(1) + ' m';
   refreshAll();
 });
-
-selectOptCard(document.getElementById('optHeight'), state.height, v=> state.height = parseFloat(v));
+selectOptCard(document.getElementById('optHeight'), state.eaves, v=> state.eaves = parseFloat(v));
 selectOptCard(document.getElementById('optRoof'), state.roof, v=> state.roof = v);
 selectOptCard(document.getElementById('optClad'), state.cladding, v=> state.cladding = v);
 selectOptCard(document.getElementById('optColour'), state.colour, v=> state.colour = v);
@@ -858,8 +891,7 @@ document.querySelectorAll('.stepper button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const key = btn.dataset.w;
     const delta = parseInt(btn.dataset.d);
-    const min = 0;
-    state.win[key] = Math.max(min, state.win[key] + delta);
+    state.win[key] = Math.max(0, state.win[key] + delta);
     document.getElementById(countIds[key]).textContent = state.win[key];
     refreshAll();
   });
@@ -875,7 +907,6 @@ function renderStepsBar(){
     bar.appendChild(pill);
   }
 }
-
 function showStep(n){
   currentStep = n;
   document.querySelectorAll('.step-panel').forEach(p=>{
@@ -884,37 +915,31 @@ function showStep(n){
   renderStepsBar();
   document.getElementById('prevBtn').disabled = (n === 1);
   document.getElementById('nextBtn').textContent = (n === totalSteps-1) ? 'Review My Design →' : 'Continue →';
-  const navButtons = document.getElementById('navButtons');
-  navButtons.style.display = (n === totalSteps) ? 'none' : 'flex';
+  document.getElementById('navButtons').style.display = (n === totalSteps) ? 'none' : 'flex';
   if(n === totalSteps) buildSummary();
 }
-
-document.getElementById('nextBtn').addEventListener('click', ()=>{
-  if(currentStep < totalSteps) showStep(currentStep+1);
-});
-document.getElementById('prevBtn').addEventListener('click', ()=>{
-  if(currentStep > 1) showStep(currentStep-1);
-});
-document.getElementById('backFrom5').addEventListener('click', ()=> showStep(totalSteps-1));
+document.getElementById('nextBtn').addEventListener('click', ()=>{ if(currentStep < totalSteps) showStep(currentStep+1); });
+document.getElementById('prevBtn').addEventListener('click', ()=>{ if(currentStep > 1) showStep(currentStep-1); });
+document.getElementById('backFrom6').addEventListener('click', ()=> showStep(totalSteps-1));
 
 function buildSummary(){
   const { floorArea, total } = computeAreaAndPrice();
   const claddingLabels = { larch:'Siberian Larch T&G', cedar:'Western Red Cedar T&G', composite:'Composite Board' };
   const insulLabels = { standard:'Standard (Building Regs)', premium:'Premium', passive:'Passive' };
   const items = [
+    ['Building type', BUILDING_TYPES[state.type].label],
     ['Footprint', state.width.toFixed(1)+'m × '+state.length.toFixed(1)+'m'],
-    ['Storeys', state.height > 3 ? 'Two Storey' : 'Single Storey'],
-    ['Roof', state.roof === 'pitched' ? 'Pitched Truss' : 'Flat / Warm Roof'],
+    ['Ceiling height', state.eaves+'m eaves'],
+    ['Roof', state.roof === 'pitched' ? 'Pitched Gable' : 'Flat / EPDM'],
     ['Cladding', claddingLabels[state.cladding]],
     ['Colour', state.colour],
     ['Insulation', insulLabels[state.insulation]],
     ['Fit-out', state.fitout === 'full' ? 'Full Fit-Out' : 'Shell Only'],
     ['Windows / Doors', `${state.win.std} std, ${state.win.lrg} large, ${state.win.roof} rooflight, ${state.win.door} door, ${state.win.bifold} bifold`],
-    ['Floor Area', floorArea.toFixed(0)+' m²'],
+    ['Floor Area', floorArea.toFixed(1)+' m²'],
     ['Estimated Price', fmtGBP(total)+' +VAT'],
   ];
-  const grid = document.getElementById('summaryGrid');
-  grid.innerHTML = items.map(([k,v])=>`<div class="summary-item"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  document.getElementById('summaryGrid').innerHTML = items.map(([k,v])=>`<div class="summary-item"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
 }
 
 document.getElementById('leadForm').addEventListener('submit', function(e){
@@ -924,11 +949,12 @@ document.getElementById('leadForm').addEventListener('submit', function(e){
     <div class="success">
       <div class="check">✓</div>
       <h3 style="font-family:'Archivo Black';text-transform:none;font-size:22px;margin-bottom:10px;">Design sent to our modular team</h3>
-      <p style="color:#5b5f56;font-size:14px;max-width:340px;margin:0 auto;">Thanks — we've received your spec (est. ${fmtGBP(total)} +VAT) along with your measurements and choices. A member of the Haldane Fisher modular team will contact you within 2 working days to arrange a site survey.</p>
+      <p style="color:#5b5f56;font-size:14px;max-width:340px;margin:0 auto;">Thanks — we've received your ${BUILDING_TYPES[state.type].label.toLowerCase()} spec (est. ${fmtGBP(total)} +VAT) along with your measurements and choices. A member of the Haldane Fisher modular team will contact you within 2 working days to arrange a site survey.</p>
     </div>`;
 });
 
 /* init */
+applyBuildingType(state.type);
 showStep(1);
 refreshAll();
 renderLoop();
