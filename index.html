@@ -88,45 +88,47 @@
   .cap-card p{font-size:13.5px;color:#5b5f56;line-height:1.55;margin:0;}
 
   .configurator{background:var(--stone);}
-  .config-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:680px;}
+  .config-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:700px;}
   .config-left{padding:36px 40px;border-right:1px solid var(--line);display:flex;flex-direction:column;}
   .steps-bar{display:flex;gap:6px;margin-bottom:28px;}
   .step-pill{flex:1;height:5px;border-radius:3px;background:var(--stone-dark);}
   .step-pill.done, .step-pill.active{background:var(--hf-red);}
   .step-label{font-size:12px;font-weight:700;color:#6c7066;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
   .step-title{font-family:'Archivo Black';font-size:24px;text-transform:none;margin-bottom:6px;}
-  .step-sub{font-size:14px;color:#5b5f56;margin-bottom:24px;line-height:1.5;}
-  .step-panel{flex:1;}
+  .step-sub{font-size:14px;color:#5b5f56;margin-bottom:20px;line-height:1.5;}
+  .step-panel{flex:1;display:flex;flex-direction:column;}
 
   .field{margin-bottom:22px;}
   .field label{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:10px;}
   .field label .val{color:var(--hf-red);font-family:'Archivo Black';font-size:13px;}
-  .field .hint{font-size:12px;color:#8a8e83;margin-top:6px;}
   input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--stone-dark);outline:none;}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--hf-red);border:3px solid #fff;box-shadow:0 0 0 1px var(--hf-red);cursor:pointer;}
   .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .opt-grid.two{grid-template-columns:repeat(2,1fr);}
-  .opt-grid.one{grid-template-columns:1fr;}
   .opt-card{border:2px solid var(--line);border-radius:6px;padding:12px 10px;text-align:left;font-size:12.5px;font-weight:700;color:#4b4f47;transition:.15s;}
   .opt-card .swatch{width:100%;height:32px;border-radius:4px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.08);}
   .opt-card.selected{border-color:var(--hf-red);background:#FFF3F3;color:var(--hf-red-dark);}
   .opt-card:hover{border-color:var(--hf-red);}
   .opt-card small{font-weight:500;color:#8a8e83;display:block;margin-top:3px;}
-  .type-card{display:flex;align-items:flex-start;gap:12px;padding:14px;text-align:left;}
-  .type-card .ticon{font-size:22px;flex-shrink:0;width:30px;}
-  .type-card .ttext b{display:block;font-size:14px;margin-bottom:2px;}
-  .type-card .ttext span{font-weight:500;color:#8a8e83;font-size:12px;}
 
   .stepper{display:flex;align-items:center;gap:14px;}
   .stepper button{width:34px;height:34px;border-radius:6px;border:2px solid var(--line);background:#fff;font-size:18px;font-weight:800;color:var(--hf-green);}
   .stepper button:hover{border-color:var(--hf-red);color:var(--hf-red);}
   .stepper .count{font-family:'Archivo Black';font-size:20px;min-width:26px;text-align:center;}
-  .win-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--stone-dark);}
-  .win-row:last-child{border-bottom:none;}
-  .win-row .wname{font-size:14px;font-weight:700;}
-  .win-row .wname small{display:block;font-weight:500;color:#8a8e83;font-size:12px;}
 
-  .nav-buttons{display:flex;justify-content:space-between;margin-top:28px;}
+  .tool-palette{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .tool-btn{background:#fff;border:2px solid var(--line);border-radius:20px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#4b4f47;}
+  .tool-btn:hover{border-color:var(--hf-red);}
+  .tool-btn.selected{background:var(--hf-red);border-color:var(--hf-red);color:#fff;}
+  .tool-btn.remove-tool.selected{background:#3A3F3A;border-color:#3A3F3A;}
+  .placed-list{border:1px solid var(--line);border-radius:8px;max-height:150px;overflow-y:auto;margin-bottom:6px;}
+  .placed-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid var(--stone-dark);}
+  .placed-row:last-child{border-bottom:none;}
+  .placed-row button{background:none;border:none;color:#b5423f;font-weight:800;font-size:15px;}
+  .empty-hint{padding:16px;text-align:center;font-size:12.5px;color:#8a8e83;}
+  .place-status{min-height:18px;font-size:12.5px;color:var(--hf-red-dark);font-weight:700;transition:opacity .3s;opacity:0;margin-bottom:8px;}
+
+  .nav-buttons{display:flex;justify-content:space-between;margin-top:auto;padding-top:20px;}
   .btn-outline{background:#fff;border:2px solid var(--ink);color:var(--ink);padding:13px 22px;border-radius:3px;font-weight:800;font-size:14px;}
   .btn-outline:hover{border-color:var(--hf-red);color:var(--hf-red);}
   .btn-solid{background:var(--hf-red);color:#fff;padding:13px 26px;border:none;border-radius:3px;font-weight:800;font-size:14px;}
@@ -134,9 +136,9 @@
   .btn-solid:disabled{background:#c9ccc3;cursor:not-allowed;}
 
   .config-right{background:#BFE3F0;position:relative;display:flex;flex-direction:column;}
-  .viewer{flex:1;position:relative;}
+  .viewer{flex:1;position:relative;cursor:grab;}
   #canvas-holder{width:100%;height:100%;}
-  .viewer-hint{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.45);color:#fff;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:20px;}
+  .viewer-hint{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.45);color:#fff;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:20px;max-width:70%;}
   .price-panel{background:#0F3320;border-top:1px solid rgba(255,255,255,0.12);padding:22px 28px;color:#fff;}
   .price-row{display:flex;justify-content:space-between;align-items:flex-end;}
   .price-row .lbl{font-size:12px;color:#9DB5A3;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;}
@@ -211,8 +213,7 @@
 <nav class="mainnav">
   <div class="mainnav-inner">
     <a class="burger">☰ ALL PRODUCTS</a>
-    <a href="#" class="active">Modular Buildings</a>
-    <a href="#">Garden Rooms &amp; Offices</a>
+    <a href="#" class="active">Garden Rooms</a>
     <a href="#">Roof Trusses</a>
     <a href="#">Spacejoists</a>
     <a href="#">Timber Frame</a>
@@ -225,10 +226,10 @@
   <div class="hero-inner">
     <div>
       <div class="eyebrow"><span class="dot"></span>NEW — DESIGN &amp; PRICE ONLINE</div>
-      <h1>Sized for a real<br>NI or ROI <em>garden</em>.</h1>
-      <p class="lede">From a compact 2.5m garden office to an 8×8m granny annexe — Haldane Fisher manufactures the timber frame, roof trusses and cladding for modular garden buildings ourselves. Design yours below and see it, and price it, before you contact us.</p>
+      <h1>Your garden room,<br>built <em>your</em> way.</h1>
+      <p class="lede">Set your size, then place every window and door exactly where you want it — like a real 3D constructor. Haldane Fisher manufactures the timber frame, roof trusses and cladding ourselves, so what you design is what we build.</p>
       <div class="hero-ctas">
-        <a href="#configurator" class="btn-primary">Design Your Build →</a>
+        <a href="#configurator" class="btn-primary">Start Designing →</a>
         <a href="#capability" class="btn-ghost">See What We Manufacture</a>
       </div>
       <div class="hero-stats">
@@ -248,9 +249,9 @@
 
 <div class="trust">
   <div class="trust-inner">
-    <div class="trust-item"><div class="n">01</div><div><h4>Built To Garden Scale</h4><p>Every preset here — office, room, annexe, shed — is sized to what actually fits a typical NI/ROI back garden.</p></div></div>
+    <div class="trust-item"><div class="n">01</div><div><h4>Built To Garden Scale</h4><p>Sized 2.5–8m — realistic for a typical NI/ROI back garden, not an open building site.</p></div></div>
     <div class="trust-item"><div class="n">02</div><div><h4>Trusses, Made Here</h4><p>Roof trusses &amp; spacejoists engineered in our own facilities — no third-party sourcing delays.</p></div></div>
-    <div class="trust-item"><div class="n">03</div><div><h4>Design Online, Build Offsite</h4><p>Configure your building on this site — we manufacture it in a controlled factory environment.</p></div></div>
+    <div class="trust-item"><div class="n">03</div><div><h4>You Place The Openings</h4><p>Click directly on the 3D model to decide exactly where windows and doors go.</p></div></div>
     <div class="trust-item"><div class="n">04</div><div><h4>One Point of Contact</h4><p>From your first sketch to final handover, one Haldane Fisher team sees it through.</p></div></div>
   </div>
 </div>
@@ -260,7 +261,7 @@
     <div class="section-head">
       <span class="kicker">Why Modular, Why Us</span>
       <h2>We already manufacture the hard parts.</h2>
-      <p>Haldane Fisher's existing truss and spacejoist manufacturing means the structural core of a modular building is something we make every day — not something we'd need to outsource.</p>
+      <p>Haldane Fisher's existing truss and spacejoist manufacturing means the structural core of a garden building is something we make every day — not something we'd need to outsource.</p>
     </div>
     <div class="cap-grid">
       <div class="cap-card"><div class="ico">🏗</div><h4>Structural Frame</h4><p>Engineered roof trusses and floor spacejoists from our own production lines, built to spec for every unit.</p></div>
@@ -276,33 +277,25 @@
     <div class="section-head">
       <span class="kicker">Design Tool — Prototype</span>
       <h2>Design your building.</h2>
-      <p>Tell us what you're building and how big your garden allows, then fine-tune windows, cladding and insulation. Drag the 3D view to look around — it updates as you go.</p>
+      <p>Set your footprint, then place windows and doors yourself directly on the 3D model. Drag the view to look around from any angle.</p>
     </div>
 
     <div class="config-wrap">
       <div class="config-left">
         <div class="steps-bar" id="stepsBar"></div>
 
-        <!-- STEP 1: Building type -->
+        <!-- STEP 1: Size & roof -->
         <div class="step-panel" data-step="1">
-          <div class="step-label">Step 1 of 6</div>
-          <div class="step-title">What are you building?</div>
-          <div class="step-sub">This sets a realistic size range for your garden — you can fine-tune the exact dimensions next.</div>
-          <div class="opt-grid one" id="optType"></div>
-        </div>
-
-        <!-- STEP 2: Size & roof -->
-        <div class="step-panel" data-step="2" style="display:none;">
-          <div class="step-label">Step 2 of 6</div>
-          <div class="step-title">Size &amp; roof shape</div>
-          <div class="step-sub" id="sizeHint">Set the footprint. We manufacture in modular bays, so this stays within realistic garden-building limits.</div>
+          <div class="step-label">Step 1 of 5</div>
+          <div class="step-title">Footprint &amp; roof shape</div>
+          <div class="step-sub">Realistic garden-building range: 2.5m–8m on each side. We manufacture in modular bays, so sizes outside this aren't buildable offsite in one piece.</div>
           <div class="field">
-            <label>Width <span class="val" id="valWidth">4.0 m</span></label>
-            <input type="range" id="rngWidth" min="2" max="8" step="0.2" value="4">
+            <label>Width <span class="val" id="valWidth">5.0 m</span></label>
+            <input type="range" id="rngWidth" min="2.5" max="8" step="0.1" value="5">
           </div>
           <div class="field">
-            <label>Length <span class="val" id="valLength">3.0 m</span></label>
-            <input type="range" id="rngLength" min="2" max="8" step="0.2" value="3">
+            <label>Length <span class="val" id="valLength">4.0 m</span></label>
+            <input type="range" id="rngLength" min="2.5" max="8" step="0.1" value="4">
           </div>
           <div class="field">
             <label>Ceiling height</label>
@@ -320,21 +313,30 @@
           </div>
         </div>
 
-        <!-- STEP 3: Windows & doors -->
-        <div class="step-panel" data-step="3" style="display:none;">
-          <div class="step-label">Step 3 of 6</div>
-          <div class="step-title">Windows &amp; doors</div>
-          <div class="step-sub">Choose how many openings you'd like. Shown approximately across the front and side elevations in the 3D preview.</div>
-          <div class="win-row"><div class="wname">Standard windows<small>1.0m × 1.1m aluminium</small></div><div class="stepper"><button data-w="std" data-d="-1">–</button><div class="count" id="cntStd">1</div><button data-w="std" data-d="1">+</button></div></div>
-          <div class="win-row"><div class="wname">Large windows<small>1.6m × 1.4m aluminium</small></div><div class="stepper"><button data-w="lrg" data-d="-1">–</button><div class="count" id="cntLrg">1</div><button data-w="lrg" data-d="1">+</button></div></div>
-          <div class="win-row"><div class="wname">Rooflights<small>0.6m × 1.0m, pitched roofs only</small></div><div class="stepper"><button data-w="roof" data-d="-1">–</button><div class="count" id="cntRoof">0</div><button data-w="roof" data-d="1">+</button></div></div>
-          <div class="win-row"><div class="wname">External doors<small>Single leaf, composite</small></div><div class="stepper"><button data-w="door" data-d="-1">–</button><div class="count" id="cntDoor">1</div><button data-w="door" data-d="1">+</button></div></div>
-          <div class="win-row"><div class="wname">Bi-fold / patio doors<small>Up to 3m glazed opening</small></div><div class="stepper"><button data-w="bifold" data-d="-1">–</button><div class="count" id="cntBifold">0</div><button data-w="bifold" data-d="1">+</button></div></div>
+        <!-- STEP 2: Windows & doors constructor -->
+        <div class="step-panel" data-step="2" style="display:none;">
+          <div class="step-label">Step 2 of 5</div>
+          <div class="step-title">Place windows &amp; doors</div>
+          <div class="step-sub">Pick a piece, then click any wall on the 3D model to place it there. Pick Remove to click an opening away.</div>
+          <div class="tool-palette" id="toolPalette">
+            <button class="tool-btn selected" data-tool="std">+ Standard Window</button>
+            <button class="tool-btn" data-tool="lrg">+ Large Window</button>
+            <button class="tool-btn" data-tool="door">+ Door</button>
+            <button class="tool-btn" data-tool="bifold">+ Bi-fold Door</button>
+            <button class="tool-btn remove-tool" data-tool="remove">✕ Remove</button>
+          </div>
+          <div class="place-status" id="placeStatus"></div>
+          <div class="placed-list" id="placedList"></div>
+          <div class="field" style="margin-top:16px;">
+            <label>Rooflights <span class="val" id="valRoofWin">0</span></label>
+            <div class="stepper"><button id="roofWinMinus">–</button><div class="count" id="cntRoofWin">0</div><button id="roofWinPlus">+</button></div>
+            <div class="hint" id="roofWinHint" style="font-size:12px;color:#8a8e83;margin-top:6px;">Evenly spaced across the roof slope. Pitched roofs only.</div>
+          </div>
         </div>
 
-        <!-- STEP 4: Cladding -->
-        <div class="step-panel" data-step="4" style="display:none;">
-          <div class="step-label">Step 4 of 6</div>
+        <!-- STEP 3: Cladding -->
+        <div class="step-panel" data-step="3" style="display:none;">
+          <div class="step-label">Step 3 of 5</div>
           <div class="step-title">Cladding &amp; colour</div>
           <div class="step-sub">Choose your tongue &amp; groove external finish and colour treatment.</div>
           <div class="field">
@@ -358,9 +360,9 @@
           </div>
         </div>
 
-        <!-- STEP 5: Insulation -->
-        <div class="step-panel" data-step="5" style="display:none;">
-          <div class="step-label">Step 5 of 6</div>
+        <!-- STEP 4: Insulation -->
+        <div class="step-panel" data-step="4" style="display:none;">
+          <div class="step-label">Step 4 of 5</div>
           <div class="step-title">Insulation &amp; interior spec</div>
           <div class="step-sub">Insulation tier affects both running costs and price per square metre.</div>
           <div class="field">
@@ -380,9 +382,9 @@
           </div>
         </div>
 
-        <!-- STEP 6: Summary -->
-        <div class="step-panel" data-step="6" style="display:none;">
-          <div class="step-label">Step 6 of 6</div>
+        <!-- STEP 5: Summary -->
+        <div class="step-panel" data-step="5" style="display:none;">
+          <div class="step-label">Step 5 of 5</div>
           <div class="step-title">Summary &amp; your details</div>
           <div class="step-sub">Review your build, then send it to our modular team — we'll follow up with a firm quotation and site survey.</div>
           <div class="summary-grid" id="summaryGrid"></div>
@@ -395,7 +397,7 @@
               <div class="full"><label>Anything else we should know?</label><textarea rows="3" placeholder="Planning status, timeline, site access..."></textarea></div>
             </div>
             <div class="nav-buttons">
-              <button type="button" class="btn-outline" id="backFrom6">← Back</button>
+              <button type="button" class="btn-outline" id="backFrom5">← Back</button>
               <button type="submit" class="btn-solid">Send My Design →</button>
             </div>
           </form>
@@ -410,8 +412,8 @@
       <div class="config-right">
         <div class="viewer">
           <div id="canvas-holder"></div>
-          <div class="viewer-hint">🖱 Drag to rotate · Scroll to zoom</div>
-          <div class="dims-tag" id="dimsTag">4.0 × 3.0 m</div>
+          <div class="viewer-hint" id="viewerHint">🖱 Drag to rotate · Scroll to zoom</div>
+          <div class="dims-tag" id="dimsTag">5.0 × 4.0 m</div>
         </div>
         <div class="price-panel">
           <div class="price-row">
@@ -429,11 +431,11 @@
   <div class="section-inner">
     <div class="section-head"><span class="kicker">Recent Configurations</span><h2>What people are building.</h2></div>
     <div class="gallery-grid">
-      <div class="gcard tall" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C7355,#5C4A38);"><span>6×5m Garden Annexe — Larch</span></div>
+      <div class="gcard tall" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C7355,#5C4A38);"><span>6×5m Garden Room — Larch</span></div>
       <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#3A3F3A,#20231F);"><span>4×3m Garden Office — Charcoal</span></div>
       <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#6E7A63,#48513F);"><span>5×4m Garden Room — Sage</span></div>
       <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#D9D5C8,#B7B3A5);"><span>3×2.5m Studio — Chalk White</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#7A2A24,#4C1815);"><span>8×8m Modular Home — Barn Red</span></div>
+      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#7A2A24,#4C1815);"><span>8×8m Garden Room — Barn Red</span></div>
     </div>
   </div>
 </section>
@@ -445,7 +447,7 @@
         <div class="logo" style="margin-bottom:14px;"><div class="mark"></div><div class="word" style="color:#fff;">HALDANE FISHER <span>MODULAR</span></div></div>
         <p style="font-size:13.5px;line-height:1.6;max-width:320px;">Part of the Haldane Fisher group — manufacturing roof trusses, spacejoists and now garden-scale modular buildings across Northern Ireland and the Republic of Ireland.</p>
       </div>
-      <div><h5>Modular</h5><a href="#configurator">Design Your Build</a><a href="#">Garden Rooms</a><a href="#">Annexes</a><a href="#">Sheds</a></div>
+      <div><h5>Garden Rooms</h5><a href="#configurator">Design Your Build</a><a href="#">Gallery</a><a href="#">Specification</a><a href="#">Brochure</a></div>
       <div><h5>Company</h5><a href="#">About Haldane Fisher</a><a href="#">Manufacturing</a><a href="#">Careers</a><a href="#">Branch Locator</a></div>
       <div><h5>Get In Touch</h5><a href="#">028 xxxx xxxx</a><a href="#">modular@haldane-fisher.com</a><a href="#">Request a Callback</a></div>
     </div>
@@ -457,51 +459,50 @@
 </footer>
 
 <script>
-/* ============ BUILDING TYPE PRESETS ============ */
-const BUILDING_TYPES = {
-  shed:   { label:'Garden Shed / Storage',        icon:'🧰', hint:'Typically 2–4m — tucks into any garden corner',
-            wMin:2, wMax:4, lMin:2, lMax:4, wDef:3, lDef:2.4, roofDef:'pitched',
-            win:{std:1,lrg:0,roof:0,door:1,bifold:0} },
-  office: { label:'Garden Office / Studio',       icon:'💻', hint:'Typically 2.5–5m — a working space at the end of the garden',
-            wMin:2.5, wMax:5, lMin:2.5, lMax:4.5, wDef:4, lDef:3, roofDef:'flat',
-            win:{std:1,lrg:2,roof:0,door:1,bifold:0} },
-  room:   { label:'Garden Room',                  icon:'🛋', hint:'Typically 3–6m — playroom, gym or guest space',
-            wMin:3, wMax:6, lMin:3, lMax:6, wDef:5, lDef:4, roofDef:'flat',
-            win:{std:2,lrg:1,roof:0,door:1,bifold:1} },
-  annexe: { label:'Garden Annexe / Granny Flat',   icon:'🏠', hint:'Typically 4–8m — self-contained living space with kitchenette + bathroom',
-            wMin:4, wMax:8, lMin:4, lMax:8, wDef:6, lDef:6, roofDef:'pitched',
-            win:{std:3,lrg:1,roof:1,door:1,bifold:1} },
-  home:   { label:'Compact Modular Home',         icon:'🏡', hint:'Up to 8×8m — the largest single-storey unit we manufacture for garden plots',
-            wMin:5, wMax:8, lMin:5, lMax:8, wDef:8, lDef:8, roofDef:'pitched',
-            win:{std:4,lrg:2,roof:1,door:1,bifold:1} },
+/* ============ OPENING SPECS ============ */
+const OPENING_SPECS = {
+  std:    { w:1.0, h:1.1,  label:'Standard Window', floor:false, cost:150 },
+  lrg:    { w:1.6, h:1.4,  label:'Large Window',    floor:false, cost:250 },
+  door:   { w:0.95, h:2.0, label:'External Door',   floor:true,  cost:900 },
+  bifold: { w:2.4, h:null, label:'Bi-fold Door',     floor:true,  cost:2400 },
 };
+const WALL_LABELS = { front:'Front (garden-facing)', back:'Back', left:'Left', right:'Right' };
 
 /* ============ STATE ============ */
+let idCounter = 5;
 const state = {
-  type:'room', width:5, length:4, eaves:2.4, roof:'flat',
-  win:{ std:2, lrg:1, roof:0, door:1, bifold:1 },
+  width:5, length:4, eaves:2.4, roof:'pitched',
+  openings:[
+    { id:'op1', wall:'front', type:'door', u:0.16 },
+    { id:'op2', wall:'front', type:'std',  u:0.52 },
+    { id:'op3', wall:'front', type:'std',  u:0.80 },
+    { id:'op4', wall:'left',  type:'lrg',  u:0.5 },
+  ],
+  roofWin:0,
   cladding:'larch', colour:'#B08655',
   insulation:'standard', fitout:'shell'
 };
 let currentStep = 1;
-const totalSteps = 6;
+const totalSteps = 5;
+let currentTool = 'std';
+
+function wallLength(wall){ return (wall==='front'||wall==='back') ? state.width : state.length; }
 
 /* ============ PRICE LOGIC ============ */
-const CLAD_RATE = { larch:0, cedar:18, composite:25 };
 const INSUL_BASE = { standard:1300, premium:1550, passive:1850 };
-const WIN_COST = { std:150, lrg:250, roof:320, door:900, bifold:2400 };
 const FITOUT_RATE = { shell:0, full:480 };
 const ROOF_ADJ = { pitched:0, flat:-0.05 };
+const ROOFLIGHT_COST = 320;
 
 function computeAreaAndPrice(){
   const floorArea = state.width * state.length;
   const perimeter = 2 * (state.width + state.length);
   const wallArea = perimeter * state.eaves;
+  const CLAD_RATE = { larch:0, cedar:18, composite:25 };
   let base = INSUL_BASE[state.insulation] * floorArea;
   base *= (1 + ROOF_ADJ[state.roof]);
   let claddingCost = wallArea * CLAD_RATE[state.cladding];
-  let windowsCost = 0;
-  Object.keys(state.win).forEach(k => windowsCost += state.win[k] * WIN_COST[k]);
+  let windowsCost = state.openings.reduce((sum,o)=> sum + OPENING_SPECS[o.type].cost, 0) + state.roofWin * ROOFLIGHT_COST;
   let fitoutCost = FITOUT_RATE[state.fitout] * floorArea;
   return { floorArea, total: base + claddingCost + windowsCost + fitoutCost };
 }
@@ -536,6 +537,7 @@ function makeCladTexture(){
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.encoding = THREE.sRGBEncoding;
   return tex;
 }
 function makeRoofTexture(dark){
@@ -546,6 +548,7 @@ function makeRoofTexture(dark){
   for(let y=0;y<128;y+=14){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(128,y); ctx.stroke(); }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.encoding = THREE.sRGBEncoding;
   return tex;
 }
 function makeDeckTexture(){
@@ -561,6 +564,7 @@ function makeDeckTexture(){
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.encoding = THREE.sRGBEncoding;
   return tex;
 }
 function makeGrassTexture(){
@@ -574,8 +578,33 @@ function makeGrassTexture(){
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.encoding = THREE.sRGBEncoding;
   tex.repeat.set(10,10);
   return tex;
+}
+function makeContactShadowTexture(){
+  const c = document.createElement('canvas'); c.width=256; c.height=256;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(128,128,20,128,128,128);
+  g.addColorStop(0,'rgba(0,0,0,0.4)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+function makeEnvironment(renderer){
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const envScene = new THREE.Scene();
+  const skyMat = new THREE.ShaderMaterial({
+    uniforms:{ top:{value:new THREE.Color(0x8fc6e8)}, bottom:{value:new THREE.Color(0xf7f3e9)} },
+    vertexShader:`varying vec3 vWorldPosition; void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vWorldPosition = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
+    fragmentShader:`varying vec3 vWorldPosition; uniform vec3 top; uniform vec3 bottom; void main(){ float h = clamp(normalize(vWorldPosition).y*0.6+0.4,0.0,1.0); gl_FragColor = vec4(mix(bottom, top, h), 1.0); }`,
+    side: THREE.BackSide
+  });
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50,32,32), skyMat));
+  const rt = pmrem.fromScene(envScene, 0.03);
+  pmrem.dispose();
+  return rt.texture;
 }
 
 /* ============ SCENE SETUP ============ */
@@ -583,7 +612,7 @@ function makeScene(holderId, interactive){
   const holder = document.getElementById(holderId);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xBFE3F0);
-  scene.fog = new THREE.Fog(0xBFE3F0, 16, 34);
+  scene.fog = new THREE.Fog(0xBFE3F0, 15, 32);
 
   const camera = new THREE.PerspectiveCamera(38, holder.clientWidth/holder.clientHeight, 0.1, 100);
   const renderer = new THREE.WebGLRenderer({ antialias:true });
@@ -592,11 +621,15 @@ function makeScene(holderId, interactive){
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
   holder.appendChild(renderer.domElement);
 
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x6b8a55, 0.9);
+  scene.environment = makeEnvironment(renderer);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x6b8a55, 0.85);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff3dd, 1.4);
+  const sun = new THREE.DirectionalLight(0xfff3dd, 1.6);
   sun.position.set(8, 11, 6);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024,1024);
@@ -604,6 +637,9 @@ function makeScene(holderId, interactive){
   sun.shadow.camera.top = 10; sun.shadow.camera.bottom = -10;
   sun.shadow.bias = -0.0015;
   scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xdceeff, 0.35);
+  fill.position.set(-6,5,-4);
+  scene.add(fill);
 
   const groundTex = makeGrassTexture();
   const ground = new THREE.Mesh(new THREE.CircleGeometry(16,40), new THREE.MeshStandardMaterial({ map: groundTex, roughness:1 }));
@@ -611,7 +647,6 @@ function makeScene(holderId, interactive){
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // simple garden context: low fence + bushes
   const fenceMat = new THREE.MeshStandardMaterial({ color:0x7A6248, roughness:0.9 });
   const fence = new THREE.Mesh(new THREE.BoxGeometry(14,1.1,0.1), fenceMat);
   fence.position.set(0, 0.55, -7);
@@ -629,7 +664,7 @@ function makeScene(holderId, interactive){
   scene.add(group);
 
   let controls = null;
-  if(interactive && window.THREE.OrbitControls){
+  if(interactive && THREE.OrbitControls){
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -638,11 +673,11 @@ function makeScene(holderId, interactive){
     controls.maxPolarAngle = Math.PI/2 - 0.03;
     controls.target.set(0, 1.2, 0);
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.2;
+    controls.autoRotateSpeed = 1.0;
     renderer.domElement.addEventListener('pointerdown', ()=> controls.autoRotate = false);
   }
 
-  return { holder, scene, camera, renderer, group, controls };
+  return { holder, scene, camera, renderer, group, controls, interactive, clickPlanes:[] };
 }
 
 const heroScene = makeScene('hero-canvas-holder', false);
@@ -664,10 +699,39 @@ function addWindow(group, materials, x, y, z, ww, wh, rotY){
   grp.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
   group.add(grp);
 }
+function addDoor(group, materials, x, y, z, dw, dh, rotY){
+  const grp = new THREE.Group();
+  const door = new THREE.Mesh(new THREE.BoxGeometry(dw, dh, 0.06), materials.door);
+  grp.add(door);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.28,8), materials.handle);
+  handle.rotation.z = Math.PI/2;
+  handle.position.set(dw/2-0.1, 0, 0.045);
+  grp.add(handle);
+  grp.position.set(x,y,z);
+  grp.rotation.y = rotY || 0;
+  grp.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
+  group.add(grp);
+}
+
+function openingTransform(wall, u, spec, eaves){
+  const w = state.width, l = state.length;
+  const len = wallLength(wall);
+  const centerOffset = (u-0.5)*len;
+  const floorY = 0.14;
+  const vertH = spec.h || eaves*0.72;
+  const centerY = spec.floor ? floorY + vertH/2 : floorY + eaves*0.52;
+  let x,z,rotY;
+  if(wall==='front'){ x=centerOffset; z=l/2+0.03; rotY=0; }
+  else if(wall==='back'){ x=centerOffset; z=-l/2-0.03; rotY=Math.PI; }
+  else if(wall==='left'){ x=-w/2-0.03; z=centerOffset; rotY=-Math.PI/2; }
+  else { x=w/2+0.03; z=centerOffset; rotY=Math.PI/2; }
+  return { x, y:centerY, z, rotY, w:spec.w, h:vertH };
+}
 
 function buildHouse(sceneObj, s){
   const { group } = sceneObj;
   while(group.children.length) group.remove(group.children[0]);
+  sceneObj.clickPlanes = [];
 
   const w = s.width, l = s.length, h = s.eaves;
   const overhang = 0.3;
@@ -675,19 +739,27 @@ function buildHouse(sceneObj, s){
 
   const cladTex = makeCladTexture();
   cladTex.repeat.set(Math.max(2, w*1.4), Math.max(1, h*1.4));
-  const wallMat = new THREE.MeshStandardMaterial({ map:cladTex, color:s.colour, roughness:0.88, metalness:0.02 });
+  const wallMat = new THREE.MeshStandardMaterial({ map:cladTex, color:s.colour, roughness:0.85, metalness:0.02 });
 
-  const frameMat = new THREE.MeshStandardMaterial({ color:0x2B2E2C, roughness:0.45, metalness:0.25 });
-  const glassMat = new THREE.MeshPhysicalMaterial({ color:0xBFE3F0, roughness:0.05, metalness:0.1, transparent:true, opacity:0.55, clearcoat:0.6, envMapIntensity:1.2 });
+  const frameMat = new THREE.MeshStandardMaterial({ color:0x2B2E2C, roughness:0.4, metalness:0.35 });
+  const glassMat = new THREE.MeshPhysicalMaterial({ color:0xBFE3F0, roughness:0.05, metalness:0.15, transparent:true, opacity:0.5, clearcoat:0.7, envMapIntensity:1.3 });
   const roofTex = makeRoofTexture(s.roof==='flat');
   roofTex.repeat.set(Math.max(2,l), Math.max(2,w));
-  const roofMat = new THREE.MeshStandardMaterial({ map:roofTex, color:0xffffff, roughness:0.85 });
+  const roofMat = new THREE.MeshStandardMaterial({ map:roofTex, color:0xffffff, roughness:0.8 });
   const deckTex = makeDeckTexture();
   deckTex.repeat.set(w/0.9, 1.6/0.35);
   const deckMat = new THREE.MeshStandardMaterial({ map:deckTex, roughness:0.9 });
   const plinthMat = new THREE.MeshStandardMaterial({ color:0x9a9a90, roughness:0.9 });
-  const doorMat = new THREE.MeshStandardMaterial({ color:0x24211f, roughness:0.5, metalness:0.1 });
-  const handleMat = new THREE.MeshStandardMaterial({ color:0xC9CDC6, roughness:0.3, metalness:0.7 });
+  const doorMat = new THREE.MeshStandardMaterial({ color:0x24211f, roughness:0.45, metalness:0.15 });
+  const handleMat = new THREE.MeshStandardMaterial({ color:0xC9CDC6, roughness:0.25, metalness:0.8 });
+  const materials = { glass:glassMat, frame:frameMat, door:doorMat, handle:handleMat };
+
+  // contact shadow
+  const shadowTex = makeContactShadowTexture();
+  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(w,l)*1.7, Math.max(w,l)*1.7), new THREE.MeshBasicMaterial({ map:shadowTex, transparent:true, depthWrite:false }));
+  shadowPlane.rotation.x = -Math.PI/2;
+  shadowPlane.position.y = 0.015;
+  group.add(shadowPlane);
 
   // plinth
   const plinth = new THREE.Mesh(new THREE.BoxGeometry(w+0.12,0.14,l+0.12), plinthMat);
@@ -709,7 +781,6 @@ function buildHouse(sceneObj, s){
     const slantLen = Math.sqrt(halfSpan*halfSpan + roofRise*roofRise);
     const actualAngle = Math.atan2(roofRise, halfSpan);
     const roofDepth = l + overhang*2;
-
     [1,-1].forEach(sign=>{
       const plane = new THREE.Mesh(new THREE.BoxGeometry(slantLen, 0.07, roofDepth), roofMat);
       plane.position.set(sign*halfSpan/2, wallTopY + roofRise/2, 0);
@@ -717,7 +788,6 @@ function buildHouse(sceneObj, s){
       plane.castShadow = true; plane.receiveShadow = true;
       group.add(plane);
     });
-
     const gShape = new THREE.Shape();
     gShape.moveTo(-w/2, 0); gShape.lineTo(w/2, 0); gShape.lineTo(0, roofRise); gShape.lineTo(-w/2,0);
     const gableGeo = new THREE.ExtrudeGeometry(gShape, { depth:0.05, bevelEnabled:false });
@@ -727,6 +797,14 @@ function buildHouse(sceneObj, s){
       gable.castShadow = true; gable.receiveShadow = true;
       group.add(gable);
     });
+    for(let i=0;i<s.roofWin;i++){
+      const n = Math.max(s.roofWin,1);
+      const rl = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.04,1.0), glassMat);
+      const zpos = -l/2 + (l/(n+1))*(i+1);
+      rl.position.set(w/4, wallTopY + roofRise*0.55, zpos);
+      rl.rotation.z = -actualAngle;
+      group.add(rl);
+    }
   } else {
     const flat = new THREE.Mesh(new THREE.BoxGeometry(w+overhang*2, 0.12, l+overhang*2), roofMat);
     flat.position.y = wallTopY + 0.06;
@@ -738,58 +816,46 @@ function buildHouse(sceneObj, s){
   }
 
   // deck
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w,4.5), 0.1, 1.6), deckMat);
+  const deckW = Math.min(w, 4.5);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.1, 1.6), deckMat);
   deck.position.set(0, 0.05, l/2 + 0.8);
   deck.receiveShadow = true; deck.castShadow = true;
   group.add(deck);
-  for(let dx=-Math.min(w,4.5)/2+0.15; dx<=Math.min(w,4.5)/2-0.1; dx+=0.9){
+  for(let dx=-deckW/2+0.15; dx<=deckW/2-0.1; dx+=0.9){
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.15,0.08), plinthMat);
     leg.position.set(dx, -0.02, l/2+1.5);
     group.add(leg);
   }
 
-  // windows on front wall
-  const frontZ = l/2 + 0.03;
-  const openings = [];
-  for(let i=0;i<s.win.std;i++) openings.push({w:1.0, h:1.1});
-  for(let i=0;i<s.win.lrg;i++) openings.push({w:1.6, h:1.4});
-  if(openings.length){
-    const spacing = w / (openings.length+1);
-    openings.forEach((o,idx)=>{
-      const x = -w/2 + spacing*(idx+1);
-      addWindow(group, {glass:glassMat, frame:frameMat}, x, h*0.52+0.14, frontZ, o.w, o.h, 0);
+  // placed openings
+  s.openings.forEach(o=>{
+    const spec = OPENING_SPECS[o.type];
+    const t = openingTransform(o.wall, o.u, spec, h);
+    if(o.type === 'door'){
+      addDoor(group, materials, t.x, t.y, t.z, t.w, t.h, t.rotY);
+    } else {
+      addWindow(group, materials, t.x, t.y, t.z, t.w, t.h, t.rotY);
+    }
+  });
+
+  // invisible click planes for the interactive viewer
+  if(sceneObj.interactive){
+    const wallDefs = [
+      { name:'front', ww:w, wh:h, pos:[0, h/2+0.14, l/2+0.02], rotY:0 },
+      { name:'back',  ww:w, wh:h, pos:[0, h/2+0.14, -l/2-0.02], rotY:Math.PI },
+      { name:'left',  ww:l, wh:h, pos:[-w/2-0.02, h/2+0.14, 0], rotY:-Math.PI/2 },
+      { name:'right', ww:l, wh:h, pos:[w/2+0.02, h/2+0.14, 0], rotY:Math.PI/2 },
+    ];
+    wallDefs.forEach(wd=>{
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(wd.ww, wd.wh), new THREE.MeshBasicMaterial({ visible:false }));
+      plane.position.set(wd.pos[0], wd.pos[1], wd.pos[2]);
+      plane.rotation.y = wd.rotY;
+      plane.userData.wall = wd.name;
+      group.add(plane);
+      sceneObj.clickPlanes.push(plane);
     });
   }
-  // door
-  if(s.win.door > 0){
-    const doorW = 0.95, doorH = 2.0;
-    const doorX = -w/2 + doorW/2 + 0.25;
-    const door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, 0.06), doorMat);
-    door.position.set(doorX, doorH/2+0.14, frontZ);
-    door.castShadow = true;
-    group.add(door);
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.28,8), handleMat);
-    handle.rotation.z = Math.PI/2;
-    handle.position.set(doorX+doorW/2-0.08, doorH/2+0.14, frontZ+0.045);
-    group.add(handle);
-  }
-  // bifold on side wall
-  if(s.win.bifold > 0){
-    const bw = Math.min(2.6, l-1.2);
-    addWindow(group, {glass:glassMat, frame:frameMat}, w/2+0.03, h*0.42+0.14, 0, bw, h*0.72, Math.PI/2);
-  }
-  // rooflights (pitched only, sit on right roof slope)
-  if(s.roof === 'pitched'){
-    for(let i=0;i<s.win.roof;i++){
-      const roofRise = (w/2) * Math.tan(pitchRad);
-      const rl = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.04,1.0), glassMat);
-      rl.position.set(w/4, wallTopY + roofRise*0.55, -l/4 + i*1.3);
-      rl.rotation.z = -pitchRad;
-      group.add(rl);
-    }
-  }
 
-  // camera framing
   const maxDim = Math.max(w, l, h*2.2);
   sceneObj.camera.position.set(maxDim*0.95, maxDim*0.62, maxDim*1.15);
   sceneObj.camera.lookAt(0, h*0.5, 0);
@@ -805,13 +871,12 @@ function renderLoop(){
   mainScene.renderer.render(mainScene.scene, mainScene.camera);
   requestAnimationFrame(renderLoop);
 }
-
 function refreshAll(){
   buildHouse(heroScene, state);
   buildHouse(mainScene, state);
   updatePricePanel();
+  renderPlacedList();
 }
-
 window.addEventListener('resize', ()=>{
   [ {s:heroScene,id:'hero-canvas-holder'}, {s:mainScene,id:'canvas-holder'} ].forEach(o=>{
     const holder = document.getElementById(o.id);
@@ -821,42 +886,122 @@ window.addEventListener('resize', ()=>{
   });
 });
 
-/* ============ UI: BUILDING TYPE STEP ============ */
-const optTypeEl = document.getElementById('optType');
-Object.keys(BUILDING_TYPES).forEach(key=>{
-  const t = BUILDING_TYPES[key];
-  const card = document.createElement('div');
-  card.className = 'opt-card type-card' + (key === state.type ? ' selected' : '');
-  card.dataset.v = key;
-  card.innerHTML = `<div class="ticon">${t.icon}</div><div class="ttext"><b>${t.label}</b><span>${t.hint}</span></div>`;
-  card.addEventListener('click', ()=>{
-    optTypeEl.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('selected'));
-    card.classList.add('selected');
-    applyBuildingType(key);
+/* ============ CLICK-TO-PLACE ============ */
+function showStatus(msg){
+  const el = document.getElementById('placeStatus');
+  el.textContent = msg;
+  el.style.opacity = 1;
+  clearTimeout(window._stTimer);
+  window._stTimer = setTimeout(()=> el.style.opacity = 0, 2200);
+}
+function placeOpening(wall, uRaw, type){
+  const spec = OPENING_SPECS[type];
+  const len = wallLength(wall);
+  const halfW = spec.w/2;
+  const margin = Math.min(0.45, halfW/len + 0.03);
+  const u = Math.min(1-margin, Math.max(margin, uRaw));
+  const centerX = (u-0.5)*len;
+  const collide = state.openings.some(o=>{
+    if(o.wall !== wall) return false;
+    const oSpec = OPENING_SPECS[o.type];
+    const oCenter = (o.u-0.5)*len;
+    return Math.abs(centerX-oCenter) < (spec.w/2 + oSpec.w/2 + 0.15);
   });
-  optTypeEl.appendChild(card);
-});
-
-function applyBuildingType(key){
-  const t = BUILDING_TYPES[key];
-  state.type = key;
-  state.width = t.wDef; state.length = t.lDef; state.roof = t.roofDef;
-  state.win = Object.assign({}, t.win);
-
-  const rw = document.getElementById('rngWidth'), rl = document.getElementById('rngLength');
-  rw.min = t.wMin; rw.max = t.wMax; rw.value = t.wDef;
-  rl.min = t.lMin; rl.max = t.lMax; rl.value = t.lDef;
-  document.getElementById('valWidth').textContent = t.wDef.toFixed(1) + ' m';
-  document.getElementById('valLength').textContent = t.lDef.toFixed(1) + ' m';
-  document.getElementById('sizeHint').textContent = `${t.label}: realistic range is ${t.wMin}–${t.wMax}m wide × ${t.lMin}–${t.lMax}m long.`;
-
-  document.getElementById('optRoof').querySelectorAll('.opt-card').forEach(c=> c.classList.toggle('selected', c.dataset.v === t.roofDef));
-  Object.keys(countIds).forEach(k=> document.getElementById(countIds[k]).textContent = state.win[k]);
-
+  if(collide){ showStatus('No room there — try another spot on this wall.'); return; }
+  state.openings.push({ id:'op'+(idCounter++), wall, type, u });
+  showStatus(spec.label + ' placed on the ' + WALL_LABELS[wall].split(' ')[0].toLowerCase() + ' wall.');
   refreshAll();
 }
+function removeOpeningAt(wall, xLocal){
+  const len = wallLength(wall);
+  let bestIdx = -1, bestDist = Infinity;
+  state.openings.forEach((o,idx)=>{
+    if(o.wall !== wall) return;
+    const oCenter = (o.u-0.5)*len;
+    const oSpec = OPENING_SPECS[o.type];
+    if(Math.abs(xLocal-oCenter) <= oSpec.w/2 + 0.1){
+      const d = Math.abs(xLocal-oCenter);
+      if(d < bestDist){ bestDist = d; bestIdx = idx; }
+    }
+  });
+  if(bestIdx >= 0){
+    state.openings.splice(bestIdx,1);
+    showStatus('Removed.');
+    refreshAll();
+  } else {
+    showStatus('No opening there to remove.');
+  }
+}
 
-/* ============ GENERIC OPTION CARDS ============ */
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+let downInfo = null;
+mainScene.renderer.domElement.addEventListener('pointerdown', (e)=>{ downInfo = {x:e.clientX, y:e.clientY, t:Date.now()}; });
+mainScene.renderer.domElement.addEventListener('pointerup', (e)=>{
+  if(!downInfo) return;
+  const dx = e.clientX-downInfo.x, dy = e.clientY-downInfo.y;
+  const moved = Math.sqrt(dx*dx+dy*dy);
+  const dt = Date.now()-downInfo.t;
+  downInfo = null;
+  if(moved > 6 || dt > 500) return;
+  if(currentStep !== 2) return;
+  const rect = mainScene.renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  pointerNDC.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(pointerNDC, mainScene.camera);
+  const hits = raycaster.intersectObjects(mainScene.clickPlanes);
+  if(!hits.length) return;
+  const hit = hits[0];
+  const wall = hit.object.userData.wall;
+  const local = hit.object.worldToLocal(hit.point.clone());
+  const len = wallLength(wall);
+  if(currentTool === 'remove'){
+    removeOpeningAt(wall, local.x);
+  } else {
+    placeOpening(wall, local.x/len + 0.5, currentTool);
+  }
+});
+
+document.querySelectorAll('.tool-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    currentTool = btn.dataset.tool;
+  });
+});
+
+function renderPlacedList(){
+  const el = document.getElementById('placedList');
+  if(!state.openings.length){
+    el.innerHTML = '<div class="empty-hint">No windows or doors placed yet — pick a piece above and click a wall in the 3D view.</div>';
+    return;
+  }
+  el.innerHTML = state.openings.map(o=>{
+    const spec = OPENING_SPECS[o.type];
+    return `<div class="placed-row"><span>${spec.label} — ${WALL_LABELS[o.wall]}</span><button data-remove="${o.id}">✕</button></div>`;
+  }).join('');
+  el.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.openings = state.openings.filter(o=>o.id !== btn.dataset.remove);
+      refreshAll();
+    });
+  });
+}
+
+document.getElementById('roofWinMinus').addEventListener('click', ()=>{
+  state.roofWin = Math.max(0, state.roofWin-1);
+  document.getElementById('cntRoofWin').textContent = state.roofWin;
+  document.getElementById('valRoofWin').textContent = state.roofWin;
+  refreshAll();
+});
+document.getElementById('roofWinPlus').addEventListener('click', ()=>{
+  state.roofWin = Math.min(4, state.roofWin+1);
+  document.getElementById('cntRoofWin').textContent = state.roofWin;
+  document.getElementById('valRoofWin').textContent = state.roofWin;
+  refreshAll();
+});
+
+/* ============ SIZE / OPTION CONTROLS ============ */
 function selectOptCard(container, defaultVal, onSelect){
   const cards = container.querySelectorAll('.opt-card');
   cards.forEach(c=>{
@@ -886,17 +1031,6 @@ selectOptCard(document.getElementById('optColour'), state.colour, v=> state.colo
 selectOptCard(document.getElementById('optInsul'), state.insulation, v=> state.insulation = v);
 selectOptCard(document.getElementById('optFitout'), state.fitout, v=> state.fitout = v);
 
-const countIds = { std:'cntStd', lrg:'cntLrg', roof:'cntRoof', door:'cntDoor', bifold:'cntBifold' };
-document.querySelectorAll('.stepper button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const key = btn.dataset.w;
-    const delta = parseInt(btn.dataset.d);
-    state.win[key] = Math.max(0, state.win[key] + delta);
-    document.getElementById(countIds[key]).textContent = state.win[key];
-    refreshAll();
-  });
-});
-
 /* ============ STEP NAVIGATION ============ */
 function renderStepsBar(){
   const bar = document.getElementById('stepsBar');
@@ -910,24 +1044,27 @@ function renderStepsBar(){
 function showStep(n){
   currentStep = n;
   document.querySelectorAll('.step-panel').forEach(p=>{
-    p.style.display = (parseInt(p.dataset.step) === n) ? 'block' : 'none';
+    p.style.display = (parseInt(p.dataset.step) === n) ? 'flex' : 'none';
   });
   renderStepsBar();
   document.getElementById('prevBtn').disabled = (n === 1);
   document.getElementById('nextBtn').textContent = (n === totalSteps-1) ? 'Review My Design →' : 'Continue →';
   document.getElementById('navButtons').style.display = (n === totalSteps) ? 'none' : 'flex';
+  document.getElementById('viewerHint').textContent = (n === 2) ? '🖱 Click a wall to place · Drag to rotate' : '🖱 Drag to rotate · Scroll to zoom';
   if(n === totalSteps) buildSummary();
 }
 document.getElementById('nextBtn').addEventListener('click', ()=>{ if(currentStep < totalSteps) showStep(currentStep+1); });
 document.getElementById('prevBtn').addEventListener('click', ()=>{ if(currentStep > 1) showStep(currentStep-1); });
-document.getElementById('backFrom6').addEventListener('click', ()=> showStep(totalSteps-1));
+document.getElementById('backFrom5').addEventListener('click', ()=> showStep(totalSteps-1));
 
 function buildSummary(){
   const { floorArea, total } = computeAreaAndPrice();
   const claddingLabels = { larch:'Siberian Larch T&G', cedar:'Western Red Cedar T&G', composite:'Composite Board' };
   const insulLabels = { standard:'Standard (Building Regs)', premium:'Premium', passive:'Passive' };
+  const openingCounts = {};
+  state.openings.forEach(o=>{ openingCounts[o.type] = (openingCounts[o.type]||0)+1; });
+  const openingSummary = Object.keys(openingCounts).map(k=> `${openingCounts[k]} ${OPENING_SPECS[k].label.toLowerCase()}${openingCounts[k]>1?'s':''}`).join(', ') || 'none placed';
   const items = [
-    ['Building type', BUILDING_TYPES[state.type].label],
     ['Footprint', state.width.toFixed(1)+'m × '+state.length.toFixed(1)+'m'],
     ['Ceiling height', state.eaves+'m eaves'],
     ['Roof', state.roof === 'pitched' ? 'Pitched Gable' : 'Flat / EPDM'],
@@ -935,7 +1072,7 @@ function buildSummary(){
     ['Colour', state.colour],
     ['Insulation', insulLabels[state.insulation]],
     ['Fit-out', state.fitout === 'full' ? 'Full Fit-Out' : 'Shell Only'],
-    ['Windows / Doors', `${state.win.std} std, ${state.win.lrg} large, ${state.win.roof} rooflight, ${state.win.door} door, ${state.win.bifold} bifold`],
+    ['Windows / Doors', openingSummary + (state.roofWin ? `, ${state.roofWin} rooflight${state.roofWin>1?'s':''}` : '')],
     ['Floor Area', floorArea.toFixed(1)+' m²'],
     ['Estimated Price', fmtGBP(total)+' +VAT'],
   ];
@@ -949,12 +1086,11 @@ document.getElementById('leadForm').addEventListener('submit', function(e){
     <div class="success">
       <div class="check">✓</div>
       <h3 style="font-family:'Archivo Black';text-transform:none;font-size:22px;margin-bottom:10px;">Design sent to our modular team</h3>
-      <p style="color:#5b5f56;font-size:14px;max-width:340px;margin:0 auto;">Thanks — we've received your ${BUILDING_TYPES[state.type].label.toLowerCase()} spec (est. ${fmtGBP(total)} +VAT) along with your measurements and choices. A member of the Haldane Fisher modular team will contact you within 2 working days to arrange a site survey.</p>
+      <p style="color:#5b5f56;font-size:14px;max-width:340px;margin:0 auto;">Thanks — we've received your garden room spec (est. ${fmtGBP(total)} +VAT) along with your measurements and every window and door placement. A member of the Haldane Fisher modular team will contact you within 2 working days to arrange a site survey.</p>
     </div>`;
 });
 
 /* init */
-applyBuildingType(state.type);
 showStep(1);
 refreshAll();
 renderLoop();
