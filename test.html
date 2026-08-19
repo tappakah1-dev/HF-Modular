@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FormSubmit Raw Test</title>
+</head>
+<body style="font-family: sans-serif; max-width: 480px; margin: 60px auto; line-height: 1.5;">
+  <h2>FormSubmit Raw Test</h2>
+  <p>This is a bare-bones test with no JavaScript, no hidden iframe, no fetch — just a plain HTML form submitting directly to FormSubmit. It WILL navigate you to a "thank you" or activation page after submitting; that's expected.</p>
+  <p>Purpose: to check whether FormSubmit itself is working for <code>tappakah1@gmail.com</code>, separate from anything in the configurator app.</p>
+
+  <form action="https://formsubmit.co/tappakah1@gmail.com" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="_subject" value="FormSubmit raw test">
+    <input type="hidden" name="_captcha" value="false">
+    <p><label>Name: <input type="text" name="name" value="Test User" required></label></p>
+    <p><label>A small test file: <input type="file" name="attachment"></label></p>
+    <p><button type="submit">Send raw test</button></p>
+  </form>
+
+  <hr>
+  <p><strong>What to check afterwards:</strong></p>
+  <ol>
+    <li>Did the page redirect to a FormSubmit "Thank you" page, or to an "Activate your form" page? If activation — check the inbox for tappakah1@gmail.com (and spam) and click the activation link, then submit this test again.</li>
+    <li>If it redirected to "Thank you" but still no email arrives after a few minutes — check spam folder, and check whether tappakah1@gmail.com's provider might be silently blocking/filtering formsubmit.co mail.</li>
+  </ol>
+</body>
+</html>
