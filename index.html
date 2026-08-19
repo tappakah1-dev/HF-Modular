@@ -2043,7 +2043,7 @@
       views.forEach(v => {
         setCameraView(v);
         renderer.render(scene, camera);
-        shots[v] = renderer.domElement.toDataURL('image/png', 0.92);
+        shots[v] = renderer.domElement.toDataURL('image/jpeg', 0.85);
       });
 
       // Restore original view
@@ -2391,7 +2391,7 @@
       const bigY = 32;
 
       // Large isometric/3D view on top
-      doc.addImage(shots['3d'], 'PNG', margin, bigY, bigW, bigH);
+      doc.addImage(shots['3d'], 'JPEG', margin, bigY, bigW, bigH);
       doc.setDrawColor(210); doc.rect(margin, bigY, bigW, bigH);
 
       // Front + top views side by side beneath
@@ -2403,10 +2403,10 @@
       doc.text('Front Elevation View', margin, smallY - 1.5);
       doc.text('Top / Plan View', margin + smallW + gap, smallY - 1.5);
 
-      doc.addImage(shots['front'], 'PNG', margin, smallY, smallW, smallH);
+      doc.addImage(shots['front'], 'JPEG', margin, smallY, smallW, smallH);
       doc.rect(margin, smallY, smallW, smallH);
 
-      doc.addImage(shots['top'], 'PNG', margin + smallW + gap, smallY, smallW, smallH);
+      doc.addImage(shots['top'], 'JPEG', margin + smallW + gap, smallY, smallW, smallH);
       doc.rect(margin + smallW + gap, smallY, smallW, smallH);
     }
 
