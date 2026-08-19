@@ -511,6 +511,9 @@
 
   </main>
 
+  <!-- Hidden iframe target so the FormSubmit POST (with file attachment) doesn't navigate the page away -->
+  <iframe name="quote-submit-frame" style="display:none" title="quote submission target"></iframe>
+
   <!-- Quote Modal Container -->
   <div id="quote-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
@@ -2530,47 +2533,74 @@
         const shots = capture3DSnapshots();
         const doc = buildProductionPackPDF({ name, email, phone }, shots);
         const pdfBlob = doc.output('blob');
-
-        // FormSubmit's ajax endpoint (used below) doesn't reliably deliver file
-        // attachments, and its attachment-capable endpoint doesn't support
-        // scripted fetch() cross-origin. So instead we upload the PDF to file.io
-        // (a no-signup host built for direct browser uploads) and email a
-        // download link instead of an attachment. The file is deleted after
-        // it's downloaded once, or after 14 days if never opened.
-        label.textContent = 'Uploading PDF...';
-        const uploadForm = new FormData();
-        uploadForm.append('file', pdfBlob, 'production-pack.pdf');
-
-        const uploadRes = await fetch('https://file.io/?expires=14d', {
-          method: 'POST',
-          body: uploadForm
-        });
-        if (!uploadRes.ok) throw new Error('PDF upload failed');
-        const uploadData = await uploadRes.json();
-        if (!uploadData.success || !uploadData.link) throw new Error('PDF upload did not return a link');
-        const pdfLink = uploadData.link;
+        const pdfFile = new File([pdfBlob], 'production-pack.pdf', { type: 'application/pdf' });
 
         label.textContent = 'Sending...';
-        const formData = new FormData();
-        formData.append('_subject', `New Garden Studio Order Request \u2014 ${name}`);
-        formData.append('_captcha', 'false');
-        formData.append('_template', 'box');
-        formData.append('name', name);
-        formData.append('email', email);
-        formData.append('phone', phone || '-');
-        formData.append('building_size', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
-        formData.append('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
-        formData.append('cladding', config.cladding);
-        formData.append('estimated_quote', document.getElementById('price-total').innerText);
-        formData.append('production_pack_pdf', `${pdfLink}  (link expires in 14 days or after first download)`);
 
-        const res = await fetch('https://formsubmit.co/ajax/tappakah1@gmail.com', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' },
-          body: formData
+        // FormSubmit only accepts file attachments via a real multipart form POST
+        // (fetch()/XHR to their attachment-capable endpoint gets blocked by CORS).
+        // We build a real hidden form + file input and submit it into a hidden
+        // iframe so the page never navigates away.
+        const iframe = document.querySelector('iframe[name="quote-submit-frame"]');
+
+        const form = document.createElement('form');
+        form.action = 'https://formsubmit.co/tappakah1@gmail.com';
+        form.method = 'POST';
+        form.enctype = 'multipart/form-data';
+        form.target = 'quote-submit-frame';
+        form.style.display = 'none';
+
+        const addField = (fieldName, value) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = fieldName;
+          input.value = value;
+          form.appendChild(input);
+        };
+
+        addField('_subject', `New Garden Studio Order Request \u2014 ${name}`);
+        addField('_captcha', 'false');
+        addField('_template', 'box');
+        addField('name', name);
+        addField('email', email);
+        addField('phone', phone || '-');
+        addField('building_size', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
+        addField('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
+        addField('cladding', config.cladding);
+        addField('estimated_quote', document.getElementById('price-total').innerText);
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.name = 'attachment';
+        fileInput.style.display = 'none';
+
+        const dt = new DataTransfer();
+        dt.items.add(pdfFile);
+        fileInput.files = dt.files;
+        form.appendChild(fileInput);
+
+        document.body.appendChild(form);
+
+        // Wait for the hidden iframe to finish loading FormSubmit's response page,
+        // with a timeout fallback since we can't read cross-origin iframe content
+        // to confirm success/failure directly.
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => resolve(), 8000);
+          const onLoad = () => {
+            clearTimeout(timeout);
+            iframe.removeEventListener('load', onLoad);
+            resolve();
+          };
+          iframe.addEventListener('load', onLoad);
+          try {
+            form.submit();
+          } catch (submitErr) {
+            clearTimeout(timeout);
+            reject(submitErr);
+          }
         });
 
-        if (!res.ok) throw new Error('Request failed');
+        document.body.removeChild(form);
 
         document.getElementById('quote-form-state').classList.add('hidden');
         document.getElementById('quote-success-state').classList.remove('hidden');
