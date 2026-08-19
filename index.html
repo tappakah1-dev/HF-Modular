@@ -1,1100 +1,2552 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Haldane Fisher Modular | Design Your Building</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<style>
-  :root{
-    --hf-red:#E31E24; --hf-red-dark:#B8161B;
-    --hf-green:#1B4D2E; --hf-green-dark:#0F3320;
-    --ink:#181A17; --paper:#FFFFFF; --stone:#F4F5F2; --stone-dark:#E7E9E3; --line:#DADCD5;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;}
-  h1,h2,h3,.display{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-0.01em;line-height:1.02;margin:0;}
-  a{color:inherit;text-decoration:none;}
-  img{max-width:100%;display:block;}
-  button{font-family:inherit;cursor:pointer;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Photorealistic Garden Studio Configurator</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-  .utility-bar{background:var(--stone);border-bottom:1px solid var(--line);font-size:13px;color:#4b4f47;}
-  .utility-inner{max-width:1280px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-  .utility-inner .right{display:flex;gap:20px;align-items:center;}
-  .utility-inner .right span{white-space:nowrap;}
+  <!-- jsPDF (used server-side of the browser to build the internal production pack that gets emailed to us - not exposed to the client) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  header.main{max-width:1280px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:32px;}
-  .logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-  .logo .mark{width:34px;height:34px;background:var(--hf-red);clip-path:polygon(50% 0%,0% 100%,100% 100%);}
-  .logo .word{font-family:'Archivo Black',sans-serif;font-size:22px;letter-spacing:-0.02em;}
-  .logo .word span{color:var(--hf-red);}
-  .search-wrap{flex:1;display:flex;max-width:520px;}
-  .search-wrap input{flex:1;border:2px solid var(--ink);border-right:none;padding:12px 16px;font-size:15px;font-style:italic;border-radius:2px 0 0 2px;font-family:'Inter',sans-serif;}
-  .search-wrap button{background:var(--ink);border:2px solid var(--ink);color:#fff;padding:0 18px;border-radius:0 2px 2px 0;}
-  .head-actions{display:flex;align-items:center;gap:28px;flex-shrink:0;margin-left:auto;}
-  .head-actions .item{display:flex;flex-direction:column;font-size:12px;font-weight:700;text-align:center;gap:2px;}
-  .head-actions .icon{font-size:20px;}
-  .head-actions .cta{background:var(--hf-red);color:#fff;padding:10px 20px;border-radius:3px;font-weight:800;font-size:13px;letter-spacing:0.02em;}
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* Custom Scrollbar for Sidebar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
 
-  nav.mainnav{background:var(--hf-green);color:#fff;}
-  .mainnav-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:30px;font-size:14px;font-weight:700;letter-spacing:0.02em;overflow-x:auto;}
-  .mainnav-inner a{padding:14px 0;white-space:nowrap;border-bottom:3px solid transparent;}
-  .mainnav-inner a:hover{border-color:var(--hf-red);}
-  .mainnav-inner a.active{border-color:var(--hf-red);color:#fff;}
-  .burger{display:flex;align-items:center;gap:8px;padding:14px 0;font-weight:800;}
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #22c55e;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+      border: 2px solid #ffffff;
+    }
 
-  .hero{position:relative;background:linear-gradient(120deg, var(--hf-green) 0%, var(--hf-green-dark) 55%, #0a1f14 100%);color:#fff;overflow:hidden;}
-  .hero-inner{max-width:1280px;margin:0 auto;padding:72px 24px 90px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center;}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.35);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:22px;}
-  .eyebrow .dot{width:7px;height:7px;background:var(--hf-red);border-radius:50%;}
-  .hero h1{font-size:48px;color:#fff;margin-bottom:20px;}
-  .hero h1 em{font-style:normal;color:var(--hf-red);}
-  .hero p.lede{font-size:18px;line-height:1.55;color:#DDE6DE;max-width:520px;margin-bottom:32px;font-weight:500;}
-  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;}
-  .btn-primary{background:var(--hf-red);color:#fff;padding:16px 28px;border-radius:3px;font-weight:800;font-size:15px;border:none;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:10px;}
-  .btn-primary:hover{background:var(--hf-red-dark);}
-  .btn-ghost{background:transparent;color:#fff;padding:16px 28px;border-radius:3px;font-weight:800;font-size:15px;border:2px solid rgba(255,255,255,0.5);}
-  .btn-ghost:hover{border-color:#fff;}
-  .hero-stats{display:flex;gap:34px;margin-top:44px;flex-wrap:wrap;}
-  .hero-stats .stat b{display:block;font-family:'Archivo Black';font-size:26px;color:#fff;}
-  .hero-stats .stat span{font-size:12.5px;color:#B9C7BB;text-transform:uppercase;letter-spacing:0.04em;}
-  .hero-visual{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:14px;}
-  .hero-visual .frame{background:#BFE3F0;border-radius:4px;overflow:hidden;position:relative;}
-  .badge-corner{position:absolute;top:14px;right:14px;background:var(--hf-red);color:#fff;font-size:11px;font-weight:800;padding:6px 10px;border-radius:3px;letter-spacing:0.03em;z-index:2;}
-
-  .trust{background:var(--stone);border-bottom:1px solid var(--line);border-top:1px solid var(--line);}
-  .trust-inner{max-width:1280px;margin:0 auto;padding:26px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-  .trust-item{display:flex;gap:14px;align-items:flex-start;}
-  .trust-item .n{font-family:'Archivo Black';font-size:20px;color:var(--hf-red);flex-shrink:0;width:38px;}
-  .trust-item h4{font-size:14px;text-transform:none;font-family:'Inter';font-weight:800;margin-bottom:4px;}
-  .trust-item p{font-size:13px;color:#5b5f56;margin:0;line-height:1.4;}
-
-  section{padding:80px 24px;}
-  .section-inner{max-width:1280px;margin:0 auto;}
-  .section-head{max-width:640px;margin-bottom:48px;}
-  .section-head .kicker{color:var(--hf-red);font-weight:800;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;display:block;}
-  .section-head h2{font-size:36px;margin-bottom:14px;}
-  .section-head p{font-size:16px;color:#5b5f56;line-height:1.6;}
-
-  .cap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
-  .cap-card{background:#fff;padding:30px 24px;}
-  .cap-card .ico{width:44px;height:44px;background:var(--stone);border-radius:6px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--hf-green);}
-  .cap-card h4{font-family:'Inter';text-transform:none;font-weight:800;font-size:16px;margin-bottom:8px;}
-  .cap-card p{font-size:13.5px;color:#5b5f56;line-height:1.55;margin:0;}
-
-  .configurator{background:var(--stone);}
-  .config-wrap{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:700px;}
-  .config-left{padding:36px 40px;border-right:1px solid var(--line);display:flex;flex-direction:column;}
-  .steps-bar{display:flex;gap:6px;margin-bottom:28px;}
-  .step-pill{flex:1;height:5px;border-radius:3px;background:var(--stone-dark);}
-  .step-pill.done, .step-pill.active{background:var(--hf-red);}
-  .step-label{font-size:12px;font-weight:700;color:#6c7066;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
-  .step-title{font-family:'Archivo Black';font-size:24px;text-transform:none;margin-bottom:6px;}
-  .step-sub{font-size:14px;color:#5b5f56;margin-bottom:20px;line-height:1.5;}
-  .step-panel{flex:1;display:flex;flex-direction:column;}
-
-  .field{margin-bottom:22px;}
-  .field label{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:10px;}
-  .field label .val{color:var(--hf-red);font-family:'Archivo Black';font-size:13px;}
-  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--stone-dark);outline:none;}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--hf-red);border:3px solid #fff;box-shadow:0 0 0 1px var(--hf-red);cursor:pointer;}
-  .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .opt-grid.two{grid-template-columns:repeat(2,1fr);}
-  .opt-card{border:2px solid var(--line);border-radius:6px;padding:12px 10px;text-align:left;font-size:12.5px;font-weight:700;color:#4b4f47;transition:.15s;}
-  .opt-card .swatch{width:100%;height:32px;border-radius:4px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.08);}
-  .opt-card.selected{border-color:var(--hf-red);background:#FFF3F3;color:var(--hf-red-dark);}
-  .opt-card:hover{border-color:var(--hf-red);}
-  .opt-card small{font-weight:500;color:#8a8e83;display:block;margin-top:3px;}
-
-  .stepper{display:flex;align-items:center;gap:14px;}
-  .stepper button{width:34px;height:34px;border-radius:6px;border:2px solid var(--line);background:#fff;font-size:18px;font-weight:800;color:var(--hf-green);}
-  .stepper button:hover{border-color:var(--hf-red);color:var(--hf-red);}
-  .stepper .count{font-family:'Archivo Black';font-size:20px;min-width:26px;text-align:center;}
-
-  .tool-palette{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
-  .tool-btn{background:#fff;border:2px solid var(--line);border-radius:20px;padding:9px 16px;font-size:12.5px;font-weight:700;color:#4b4f47;}
-  .tool-btn:hover{border-color:var(--hf-red);}
-  .tool-btn.selected{background:var(--hf-red);border-color:var(--hf-red);color:#fff;}
-  .tool-btn.remove-tool.selected{background:#3A3F3A;border-color:#3A3F3A;}
-  .placed-list{border:1px solid var(--line);border-radius:8px;max-height:150px;overflow-y:auto;margin-bottom:6px;}
-  .placed-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid var(--stone-dark);}
-  .placed-row:last-child{border-bottom:none;}
-  .placed-row button{background:none;border:none;color:#b5423f;font-weight:800;font-size:15px;}
-  .empty-hint{padding:16px;text-align:center;font-size:12.5px;color:#8a8e83;}
-  .place-status{min-height:18px;font-size:12.5px;color:var(--hf-red-dark);font-weight:700;transition:opacity .3s;opacity:0;margin-bottom:8px;}
-
-  .nav-buttons{display:flex;justify-content:space-between;margin-top:auto;padding-top:20px;}
-  .btn-outline{background:#fff;border:2px solid var(--ink);color:var(--ink);padding:13px 22px;border-radius:3px;font-weight:800;font-size:14px;}
-  .btn-outline:hover{border-color:var(--hf-red);color:var(--hf-red);}
-  .btn-solid{background:var(--hf-red);color:#fff;padding:13px 26px;border:none;border-radius:3px;font-weight:800;font-size:14px;}
-  .btn-solid:hover{background:var(--hf-red-dark);}
-  .btn-solid:disabled{background:#c9ccc3;cursor:not-allowed;}
-
-  .config-right{background:#BFE3F0;position:relative;display:flex;flex-direction:column;}
-  .viewer{flex:1;position:relative;cursor:grab;}
-  #canvas-holder{width:100%;height:100%;}
-  .viewer-hint{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.45);color:#fff;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:20px;max-width:70%;}
-  .price-panel{background:#0F3320;border-top:1px solid rgba(255,255,255,0.12);padding:22px 28px;color:#fff;}
-  .price-row{display:flex;justify-content:space-between;align-items:flex-end;}
-  .price-row .lbl{font-size:12px;color:#9DB5A3;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;}
-  .price-row .amt{font-family:'Archivo Black';font-size:32px;}
-  .price-row .amt small{font-size:14px;font-family:'Inter';font-weight:600;color:#9DB5A3;}
-  .price-note{font-size:11.5px;color:#87A08E;margin-top:6px;}
-  .dims-tag{position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.45);color:#fff;padding:8px 14px;border-radius:6px;font-size:12.5px;font-weight:700;}
-
-  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:20px;}
-  .summary-item{background:var(--stone);border-radius:6px;padding:12px 14px;}
-  .summary-item .k{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#8a8e83;font-weight:700;margin-bottom:3px;}
-  .summary-item .v{font-size:14px;font-weight:700;}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-  .form-grid .full{grid-column:1/-1;}
-  .form-grid input, .form-grid textarea{width:100%;border:2px solid var(--line);border-radius:6px;padding:12px 14px;font-size:14px;font-family:'Inter';}
-  .form-grid input:focus, .form-grid textarea:focus{border-color:var(--hf-red);outline:none;}
-  .form-grid label{font-size:12.5px;font-weight:700;margin-bottom:6px;display:block;}
-  .success{text-align:center;padding:60px 20px;}
-  .success .check{width:70px;height:70px;border-radius:50%;background:#E9F5EC;color:#1B7A3D;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;}
-
-  .gallery-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:20px;grid-template-rows:auto auto;}
-  .gcard{border-radius:8px;overflow:hidden;position:relative;color:#fff;min-height:220px;display:flex;align-items:flex-end;padding:22px;background-size:cover;background-position:center;}
-  .gcard::before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,0.65),rgba(0,0,0,0.05));}
-  .gcard span{position:relative;font-family:'Archivo Black';font-size:19px;text-transform:uppercase;}
-  .gcard.tall{grid-row:1/3;min-height:460px;}
-
-  footer{background:var(--ink);color:#B9BDB3;padding:56px 24px 26px;}
-  .footer-inner{max-width:1280px;margin:0 auto;}
-  .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;}
-  .footer-grid h5{font-family:'Inter';color:#fff;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:16px;}
-  .footer-grid a{display:block;font-size:13.5px;padding:6px 0;color:#9CA097;}
-  .footer-grid a:hover{color:#fff;}
-  .footer-bottom{border-top:1px solid #333630;padding-top:22px;font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-
-  @media (max-width:980px){
-    .hero-inner{grid-template-columns:1fr;}
-    .cap-grid{grid-template-columns:repeat(2,1fr);}
-    .config-wrap{grid-template-columns:1fr;}
-    .config-right{min-height:420px;}
-    .trust-inner{grid-template-columns:repeat(2,1fr);}
-    .gallery-grid{grid-template-columns:1fr 1fr;}
-    .gcard.tall{grid-row:auto;min-height:220px;}
-    .footer-grid{grid-template-columns:1fr 1fr;}
-    .form-grid{grid-template-columns:1fr;}
-    .summary-grid{grid-template-columns:1fr;}
-  }
-</style>
+    .glazing-filter-btn.active, .wall-select-btn.active {
+      background-color: #22c55e;
+      color: #09090b;
+      font-weight: 700;
+      border-color: #22c55e;
+    }
+  </style>
 </head>
-<body>
+<body class="bg-gray-950 text-gray-100 h-screen w-screen overflow-hidden flex flex-col md:flex-row select-none">
 
-<div class="utility-bar">
-  <div class="utility-inner">
-    <div>Shop In <strong>N. Ireland</strong> &nbsp;▾</div>
-    <div class="right">
-      <span>Roof Trusses &amp; I-Joists Manufacturer since 1975</span>
-      <span>Branches Across NI &amp; ROI</span>
-      <span>Trade Accounts</span>
-    </div>
-  </div>
-</div>
-
-<header class="main">
-  <div class="logo"><div class="mark"></div><div class="word">HALDANE FISHER <span>MODULAR</span></div></div>
-  <div class="search-wrap"><input type="text" placeholder="Search garden rooms, annexes, sheds..."><button>🔍</button></div>
-  <div class="head-actions">
-    <div class="item"><div class="icon">📍</div>Find a Branch</div>
-    <div class="item"><div class="icon">📄</div>Download Brochure</div>
-    <a href="#configurator" class="cta">Start Designing</a>
-  </div>
-</header>
-
-<nav class="mainnav">
-  <div class="mainnav-inner">
-    <a class="burger">☰ ALL PRODUCTS</a>
-    <a href="#" class="active">Garden Rooms</a>
-    <a href="#">Roof Trusses</a>
-    <a href="#">Spacejoists</a>
-    <a href="#">Timber Frame</a>
-    <a href="#">Case Studies</a>
-    <a href="#">Trade Portal</a>
-  </div>
-</nav>
-
-<section class="hero" style="padding:0;">
-  <div class="hero-inner">
-    <div>
-      <div class="eyebrow"><span class="dot"></span>NEW — DESIGN &amp; PRICE ONLINE</div>
-      <h1>Your garden room,<br>built <em>your</em> way.</h1>
-      <p class="lede">Set your size, then place every window and door exactly where you want it — like a real 3D constructor. Haldane Fisher manufactures the timber frame, roof trusses and cladding ourselves, so what you design is what we build.</p>
-      <div class="hero-ctas">
-        <a href="#configurator" class="btn-primary">Start Designing →</a>
-        <a href="#capability" class="btn-ghost">See What We Manufacture</a>
+  <!-- Left/Main Control Sidebar -->
+  <aside class="w-full md:w-96 lg:w-[420px] bg-zinc-900 border-r border-zinc-800 flex flex-col h-1/2 md:h-full z-20 shadow-2xl shrink-0">
+    
+    <!-- Header -->
+    <div class="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/90 backdrop-blur">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold shadow-inner">
+          <i class="fa-solid fa-house-laptop text-base"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-sm text-zinc-100 tracking-wide uppercase">Garden Room Studio</h1>
+          <p class="text-[11px] text-zinc-400">UK Standard Spec 3D Planner</p>
+        </div>
       </div>
-      <div class="hero-stats">
-        <div class="stat"><b>45+</b><span>Years Manufacturing</span></div>
-        <div class="stat"><b>2.5–8m</b><span>Realistic Garden Sizes</span></div>
-        <div class="stat"><b>100%</b><span>In-House Components</span></div>
-      </div>
-    </div>
-    <div class="hero-visual">
-      <div class="frame">
-        <span class="badge-corner">LIVE 3D PREVIEW</span>
-        <div id="hero-canvas-holder" style="height:420px;"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="trust">
-  <div class="trust-inner">
-    <div class="trust-item"><div class="n">01</div><div><h4>Built To Garden Scale</h4><p>Sized 2.5–8m — realistic for a typical NI/ROI back garden, not an open building site.</p></div></div>
-    <div class="trust-item"><div class="n">02</div><div><h4>Trusses, Made Here</h4><p>Roof trusses &amp; spacejoists engineered in our own facilities — no third-party sourcing delays.</p></div></div>
-    <div class="trust-item"><div class="n">03</div><div><h4>You Place The Openings</h4><p>Click directly on the 3D model to decide exactly where windows and doors go.</p></div></div>
-    <div class="trust-item"><div class="n">04</div><div><h4>One Point of Contact</h4><p>From your first sketch to final handover, one Haldane Fisher team sees it through.</p></div></div>
-  </div>
-</div>
-
-<section id="capability">
-  <div class="section-inner">
-    <div class="section-head">
-      <span class="kicker">Why Modular, Why Us</span>
-      <h2>We already manufacture the hard parts.</h2>
-      <p>Haldane Fisher's existing truss and spacejoist manufacturing means the structural core of a garden building is something we make every day — not something we'd need to outsource.</p>
-    </div>
-    <div class="cap-grid">
-      <div class="cap-card"><div class="ico">🏗</div><h4>Structural Frame</h4><p>Engineered roof trusses and floor spacejoists from our own production lines, built to spec for every unit.</p></div>
-      <div class="cap-card"><div class="ico">🌲</div><h4>Timber Cladding</h4><p>Tongue &amp; groove external cladding in a range of species, profiles and factory-applied finishes.</p></div>
-      <div class="cap-card"><div class="ico">🧊</div><h4>Insulation Systems</h4><p>From standard building-regs spec through to near-passive-house performance, fitted offsite.</p></div>
-      <div class="cap-card"><div class="ico">🚚</div><h4>Offsite Build, Onsite Install</h4><p>Modules are completed in a controlled factory environment, then transported and installed on your base.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="configurator" id="configurator">
-  <div class="section-inner">
-    <div class="section-head">
-      <span class="kicker">Design Tool — Prototype</span>
-      <h2>Design your building.</h2>
-      <p>Set your footprint, then place windows and doors yourself directly on the 3D model. Drag the view to look around from any angle.</p>
+      <button onclick="resetConfiguration()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg border border-zinc-700 transition flex items-center gap-1.5 cursor-pointer">
+        <i class="fa-solid fa-rotate-right text-[10px]"></i> Reset
+      </button>
     </div>
 
-    <div class="config-wrap">
-      <div class="config-left">
-        <div class="steps-bar" id="stepsBar"></div>
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-zinc-800 bg-zinc-950/60 text-xs font-medium text-zinc-400">
+      <button onclick="switchTab('dimensions')" id="tab-dimensions" class="tab-btn flex-1 py-3 text-emerald-400 border-b-2 border-emerald-500 bg-zinc-800/40 transition">
+        <i class="fa-solid fa-ruler-combined block mb-1 text-sm"></i> Size
+      </button>
+      <button onclick="switchTab('materials')" id="tab-materials" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
+        <i class="fa-solid fa-layer-group block mb-1 text-sm"></i> Cladding
+      </button>
+      <button onclick="switchTab('openings')" id="tab-openings" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
+        <i class="fa-solid fa-door-open block mb-1 text-sm"></i> Glazing
+      </button>
+      <button onclick="switchTab('decking')" id="tab-decking" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
+        <i class="fa-solid fa-sliders block mb-1 text-sm"></i> Options
+      </button>
+    </div>
 
-        <!-- STEP 1: Size & roof -->
-        <div class="step-panel" data-step="1">
-          <div class="step-label">Step 1 of 5</div>
-          <div class="step-title">Footprint &amp; roof shape</div>
-          <div class="step-sub">Realistic garden-building range: 2.5m–8m on each side. We manufacture in modular bays, so sizes outside this aren't buildable offsite in one piece.</div>
-          <div class="field">
-            <label>Width <span class="val" id="valWidth">5.0 m</span></label>
-            <input type="range" id="rngWidth" min="2.5" max="8" step="0.1" value="5">
+    <!-- Scrollable Tab Content Container -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-6">
+
+      <!-- TAB 1: DIMENSIONS -->
+      <div id="content-dimensions" class="tab-content space-y-5">
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Room Width (External)</label>
+            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30" id="val-width">4.50 m</span>
           </div>
-          <div class="field">
-            <label>Length <span class="val" id="valLength">4.0 m</span></label>
-            <input type="range" id="rngLength" min="2.5" max="8" step="0.1" value="4">
+          <input type="range" id="input-width" min="2.5" max="8.0" step="0.25" value="4.5" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
+          <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>2.5m</span><span>5.0m</span><span>8.0m</span></div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Room Depth (External)</label>
+            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30" id="val-depth">3.50 m</span>
           </div>
-          <div class="field">
-            <label>Ceiling height</label>
-            <div class="opt-grid two" id="optHeight">
-              <div class="opt-card" data-v="2.4">Standard<br><small>2.4m eaves</small></div>
-              <div class="opt-card" data-v="2.7">Vaulted<br><small>2.7m eaves</small></div>
-            </div>
+          <input type="range" id="input-depth" min="2.5" max="6.0" step="0.25" value="3.5" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
+          <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>2.5m</span><span>4.0m</span><span>6.0m</span></div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Overall Height</label>
+            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30" id="val-height">2.74 m</span>
           </div>
-          <div class="field">
-            <label>Roof shape</label>
-            <div class="opt-grid two" id="optRoof">
-              <div class="opt-card" data-v="pitched">Pitched<br><small>Gable timber roof</small></div>
-              <div class="opt-card" data-v="flat">Flat<br><small>EPDM membrane roof</small></div>
-            </div>
+          <input type="range" id="input-height" min="2.2" max="3.2" step="0.05" value="2.74" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
+          <p class="text-[11px] text-zinc-400 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-emerald-400"></i> Standard 2.5m-2.8m exterior height suitable for UK Permitted Development.</p>
+        </div>
+
+        <hr class="border-zinc-800">
+
+        <!-- Roof Overhang & Style -->
+        <div class="space-y-3">
+          <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Roof Architecture</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="setRoofType('flat')" id="roof-flat" class="roof-btn p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 text-left transition">
+              <div class="font-semibold text-xs text-zinc-100">Modern Pent / Flat Roof</div>
+              <div class="text-[10px] text-zinc-400 mt-0.5">Deep black fascia trim overhang</div>
+            </button>
+            <button onclick="setRoofType('pitched')" id="roof-pitched" class="roof-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 text-left transition">
+              <div class="font-semibold text-xs text-zinc-100">Apex Dual Pitch</div>
+              <div class="text-[10px] text-zinc-400 mt-0.5">Traditional vaulted roof gable</div>
+            </button>
           </div>
         </div>
 
-        <!-- STEP 2: Windows & doors constructor -->
-        <div class="step-panel" data-step="2" style="display:none;">
-          <div class="step-label">Step 2 of 5</div>
-          <div class="step-title">Place windows &amp; doors</div>
-          <div class="step-sub">Pick a piece, then click any wall on the 3D model to place it there. Pick Remove to click an opening away.</div>
-          <div class="tool-palette" id="toolPalette">
-            <button class="tool-btn selected" data-tool="std">+ Standard Window</button>
-            <button class="tool-btn" data-tool="lrg">+ Large Window</button>
-            <button class="tool-btn" data-tool="door">+ Door</button>
-            <button class="tool-btn" data-tool="bifold">+ Bi-fold Door</button>
-            <button class="tool-btn remove-tool" data-tool="remove">✕ Remove</button>
+        <div class="pt-2">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider" id="label-pitch">Roof Pitch / Fall</label>
+            <span class="text-xs font-medium text-zinc-300" id="val-pitch">3°</span>
           </div>
-          <div class="place-status" id="placeStatus"></div>
-          <div class="placed-list" id="placedList"></div>
-          <div class="field" style="margin-top:16px;">
-            <label>Rooflights <span class="val" id="valRoofWin">0</span></label>
-            <div class="stepper"><button id="roofWinMinus">–</button><div class="count" id="cntRoofWin">0</div><button id="roofWinPlus">+</button></div>
-            <div class="hint" id="roofWinHint" style="font-size:12px;color:#8a8e83;margin-top:6px;">Evenly spaced across the roof slope. Pitched roofs only.</div>
-          </div>
+          <input type="range" id="input-pitch" min="0" max="15" step="1" value="3" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
         </div>
 
-        <!-- STEP 3: Cladding -->
-        <div class="step-panel" data-step="3" style="display:none;">
-          <div class="step-label">Step 3 of 5</div>
-          <div class="step-title">Cladding &amp; colour</div>
-          <div class="step-sub">Choose your tongue &amp; groove external finish and colour treatment.</div>
-          <div class="field">
-            <label>Cladding profile</label>
-            <div class="opt-grid" id="optClad">
-              <div class="opt-card" data-v="larch">Siberian Larch<br><small>Vertical T&amp;G</small></div>
-              <div class="opt-card" data-v="cedar">Western Red Cedar<br><small>Vertical T&amp;G</small></div>
-              <div class="opt-card" data-v="composite">Composite Board<br><small>Low-maintenance</small></div>
-            </div>
+        <div class="pt-2">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Roof Side Overhang</label>
+            <span class="text-xs font-medium text-zinc-300" id="val-overhang">0.40 m</span>
           </div>
-          <div class="field">
-            <label>Finish colour</label>
-            <div class="opt-grid" id="optColour">
-              <div class="opt-card" data-v="#B08655"><div class="swatch" style="background:#B08655;"></div>Natural Timber</div>
-              <div class="opt-card" data-v="#3A3F3A"><div class="swatch" style="background:#3A3F3A;"></div>Charcoal</div>
-              <div class="opt-card" data-v="#6E7A63"><div class="swatch" style="background:#6E7A63;"></div>Sage Green</div>
-              <div class="opt-card" data-v="#7A2A24"><div class="swatch" style="background:#7A2A24;"></div>Barn Red</div>
-              <div class="opt-card" data-v="#D9D5C8"><div class="swatch" style="background:#D9D5C8;"></div>Chalk White</div>
-              <div class="opt-card" data-v="#2B2E2C"><div class="swatch" style="background:#2B2E2C;"></div>Graphite</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 4: Insulation -->
-        <div class="step-panel" data-step="4" style="display:none;">
-          <div class="step-label">Step 4 of 5</div>
-          <div class="step-title">Insulation &amp; interior spec</div>
-          <div class="step-sub">Insulation tier affects both running costs and price per square metre.</div>
-          <div class="field">
-            <label>Insulation tier</label>
-            <div class="opt-grid" id="optInsul">
-              <div class="opt-card" data-v="standard">Standard<br><small>Building Regs</small></div>
-              <div class="opt-card" data-v="premium">Premium<br><small>Enhanced U-values</small></div>
-              <div class="opt-card" data-v="passive">Passive<br><small>Near Passive-House</small></div>
-            </div>
-          </div>
-          <div class="field">
-            <label>Interior fit-out</label>
-            <div class="opt-grid two" id="optFitout">
-              <div class="opt-card" data-v="shell">Shell Only<br><small>You finish internally</small></div>
-              <div class="opt-card" data-v="full">Full Fit-Out<br><small>Plastered, wired, plumbed</small></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 5: Summary -->
-        <div class="step-panel" data-step="5" style="display:none;">
-          <div class="step-label">Step 5 of 5</div>
-          <div class="step-title">Summary &amp; your details</div>
-          <div class="step-sub">Review your build, then send it to our modular team — we'll follow up with a firm quotation and site survey.</div>
-          <div class="summary-grid" id="summaryGrid"></div>
-          <form id="leadForm">
-            <div class="form-grid">
-              <div><label>Full name</label><input type="text" required placeholder="Jane Smith"></div>
-              <div><label>Phone</label><input type="tel" required placeholder="028 xxx xxxxx"></div>
-              <div class="full"><label>Email</label><input type="email" required placeholder="jane@email.com"></div>
-              <div class="full"><label>Site postcode / address</label><input type="text" placeholder="Where will this be built?"></div>
-              <div class="full"><label>Anything else we should know?</label><textarea rows="3" placeholder="Planning status, timeline, site access..."></textarea></div>
-            </div>
-            <div class="nav-buttons">
-              <button type="button" class="btn-outline" id="backFrom5">← Back</button>
-              <button type="submit" class="btn-solid">Send My Design →</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="nav-buttons" id="navButtons">
-          <button class="btn-outline" id="prevBtn" disabled>← Back</button>
-          <button class="btn-solid" id="nextBtn">Continue →</button>
+          <input type="range" id="input-overhang" min="0.1" max="0.8" step="0.05" value="0.4" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
         </div>
       </div>
 
-      <div class="config-right">
-        <div class="viewer">
-          <div id="canvas-holder"></div>
-          <div class="viewer-hint" id="viewerHint">🖱 Drag to rotate · Scroll to zoom</div>
-          <div class="dims-tag" id="dimsTag">5.0 × 4.0 m</div>
+      <!-- TAB 2: CLADDING & FINISHES -->
+      <div id="content-materials" class="tab-content hidden space-y-4">
+        <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Exterior Cladding Material</label>
+        
+        <div class="grid grid-cols-1 gap-2.5">
+          <button onclick="setCladding('cedar')" id="clad-cedar" class="clad-btn active p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 flex items-center space-x-3 text-left transition">
+            <div class="w-9 h-9 rounded-lg bg-amber-700 border border-amber-500 flex-shrink-0 shadow-inner"></div>
+            <div class="flex-1">
+              <div class="font-semibold text-xs text-zinc-100">Natural Western Red Cedar</div>
+              <div class="text-[11px] text-zinc-400">Vertical slatted architectural planks</div>
+            </div>
+            <span class="text-xs text-emerald-400 font-bold">+£0</span>
+          </button>
+
+          <button onclick="setCladding('oak')" id="clad-oak" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
+            <div class="w-9 h-9 rounded-lg bg-amber-800 border border-amber-600 flex-shrink-0 shadow-inner"></div>
+            <div class="flex-1">
+              <div class="font-semibold text-xs text-zinc-100">Warm Honey Oak Cladding</div>
+              <div class="text-[11px] text-zinc-400">Premium treated vertical timber</div>
+            </div>
+            <span class="text-xs text-zinc-400">+£12/m²</span>
+          </button>
+
+          <button onclick="setCladding('composite')" id="clad-composite" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
+            <div class="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-600 flex-shrink-0 shadow-inner"></div>
+            <div class="flex-1">
+              <div class="font-semibold text-xs text-zinc-100">Anthracite Composite Slats</div>
+              <div class="text-[11px] text-zinc-400">Zero-maintenance charcoal composite</div>
+            </div>
+            <span class="text-xs text-zinc-400">+£35/m²</span>
+          </button>
+
+          <button onclick="setCladding('render')" id="clad-render" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
+            <div class="w-9 h-9 rounded-lg bg-slate-200 border border-white flex-shrink-0 shadow-inner"></div>
+            <div class="flex-1">
+              <div class="font-semibold text-xs text-zinc-100">Crisp White Silicone Render</div>
+              <div class="text-[11px] text-zinc-400">Smooth modern monochrome exterior</div>
+            </div>
+            <span class="text-xs text-zinc-400">+£25/m²</span>
+          </button>
         </div>
-        <div class="price-panel">
-          <div class="price-row">
-            <div><div class="lbl">Estimated Build Price</div><div class="amt" id="priceAmt">£0<small>+VAT</small></div></div>
-            <div style="text-align:right;"><div class="lbl">Floor Area</div><div style="font-family:'Archivo Black';font-size:20px;" id="areaAmt">0 m²</div></div>
+
+        <hr class="border-zinc-800 my-4">
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2.5">Window & Trim Frame Color</label>
+          <div class="flex space-x-3">
+            <button onclick="setFrameColor('#18181b')" class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-zinc-900 border border-emerald-500 text-xs text-zinc-200">
+              <span class="w-4 h-4 rounded-full bg-zinc-900 border border-zinc-600 inline-block"></span>
+              <span>Anthracite (RAL 7016)</span>
+            </button>
+            <button onclick="setFrameColor('#27272a')" class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200">
+              <span class="w-4 h-4 rounded-full bg-zinc-800 border border-zinc-600 inline-block"></span>
+              <span>Matt Black (RAL 9005)</span>
+            </button>
           </div>
-          <div class="price-note">Indicative estimate only, based on standard groundworks and access. Final price confirmed after site survey.</div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<section>
-  <div class="section-inner">
-    <div class="section-head"><span class="kicker">Recent Configurations</span><h2>What people are building.</h2></div>
-    <div class="gallery-grid">
-      <div class="gcard tall" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#8C7355,#5C4A38);"><span>6×5m Garden Room — Larch</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#3A3F3A,#20231F);"><span>4×3m Garden Office — Charcoal</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#6E7A63,#48513F);"><span>5×4m Garden Room — Sage</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#D9D5C8,#B7B3A5);"><span>3×2.5m Studio — Chalk White</span></div>
-      <div class="gcard" style="background-image:linear-gradient(0deg,rgba(0,0,0,.5),rgba(0,0,0,.1)), linear-gradient(135deg,#7A2A24,#4C1815);"><span>8×8m Garden Room — Barn Red</span></div>
-    </div>
-  </div>
-</section>
+      <!-- TAB 3: DOORS & WINDOWS (UK Standard Sizes) -->
+      <div id="content-openings" class="tab-content hidden space-y-4">
+        
+        <!-- Target Wall Selector for New Openings -->
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">Target Wall for New Glazing</label>
+            <span class="text-[10px] text-zinc-400">Select wall to add onto</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5 text-xs">
+            <button onclick="setTargetWall('front')" id="wall-btn-front" class="wall-select-btn active py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-center transition font-medium">Front</button>
+            <button onclick="setTargetWall('left')" id="wall-btn-left" class="wall-select-btn py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 text-center transition font-medium">Left</button>
+            <button onclick="setTargetWall('right')" id="wall-btn-right" class="wall-select-btn py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 text-center transition font-medium">Right</button>
+            <button onclick="setTargetWall('back')" id="wall-btn-back" class="wall-select-btn py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 text-center transition font-medium">Back</button>
+          </div>
+        </div>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div>
-        <div class="logo" style="margin-bottom:14px;"><div class="mark"></div><div class="word" style="color:#fff;">HALDANE FISHER <span>MODULAR</span></div></div>
-        <p style="font-size:13.5px;line-height:1.6;max-width:320px;">Part of the Haldane Fisher group — manufacturing roof trusses, spacejoists and now garden-scale modular buildings across Northern Ireland and the Republic of Ireland.</p>
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Standard UK Glazing</label>
+          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">UK Standard Apertures</span>
+        </div>
+
+        <!-- Glazing Filter Tabs -->
+        <div class="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-xl text-[11px] border border-zinc-800">
+          <button onclick="filterGlazingCategory('bifold')" id="glazing-cat-bifold" class="glazing-filter-btn active py-1.5 rounded-lg text-center transition">Bifolds & Sliders</button>
+          <button onclick="filterGlazingCategory('doors')" id="glazing-cat-doors" class="glazing-filter-btn py-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 text-center transition">French & Single</button>
+          <button onclick="filterGlazingCategory('windows')" id="glazing-cat-windows" class="glazing-filter-btn py-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 text-center transition">Windows</button>
+        </div>
+
+        <!-- Glazing Option Grid -->
+        <div class="grid grid-cols-2 gap-2.5" id="glazing-options-grid">
+
+          <!-- BIFOLDS & SLIDERS -->
+          <button onclick="addOpening('bifold-180')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-door-open text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">2 Panels</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.8m Bifold Door</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1800 x 2100mm • £1,850</div>
+          </button>
+
+          <button onclick="addOpening('bifold-240')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-door-open text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">3 Panels</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">2.4m Bifold Door</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">2400 x 2100mm • £2,100</div>
+          </button>
+
+          <button onclick="addOpening('bifold-wide')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-door-open text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">3 Wide</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">2.8m Wide Bifold</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">2800 x 2100mm • £2,450</div>
+          </button>
+
+          <button onclick="addOpening('bifold-360')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-door-open text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">4 Panels</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">3.6m Grand Bifold</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">3600 x 2100mm • £3,100</div>
+          </button>
+
+          <button onclick="addOpening('sliding-180')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-table-columns text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">2 Track</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.8m Sliding Patio</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1800 x 2100mm • £1,550</div>
+          </button>
+
+          <button onclick="addOpening('sliding-210')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-table-columns text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">2 Track</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">2.1m Sliding Patio</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">2100 x 2100mm • £1,750</div>
+          </button>
+
+          <button onclick="addOpening('sliding-240')" data-cat="bifold" class="glazing-option-card p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-table-columns text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">2 Track</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">2.4m Sliding Patio</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">2400 x 2100mm • £1,950</div>
+          </button>
+
+          <!-- FRENCH & SINGLE DOORS -->
+          <button onclick="addOpening('single-door')" data-cat="doors" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-door-closed text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Single</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">0.9m Single Access Door</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">900 x 2100mm • £780</div>
+          </button>
+
+          <button onclick="addOpening('french-150')" data-cat="doors" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-kaaba text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Double</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.5m French Doors</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1500 x 2100mm • £1,280</div>
+          </button>
+
+          <button onclick="addOpening('french-180')" data-cat="doors" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-kaaba text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Double</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.8m French Doors</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1800 x 2100mm • £1,420</div>
+          </button>
+
+          <!-- WINDOWS -->
+          <button onclick="addOpening('window-high-120')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-border-top-left text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Transom</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.2m Clerestory Window</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1200 x 500mm • £480</div>
+          </button>
+
+          <button onclick="addOpening('window-high-180')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-border-top-left text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Transom</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.8m Desk High Window</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1800 x 500mm • £580</div>
+          </button>
+
+          <button onclick="addOpening('window-casement-60')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-regular fa-square text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Casement</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">0.6m Slim Casement</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">600 x 1050mm • £390</div>
+          </button>
+
+          <button onclick="addOpening('window-casement-120')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-regular fa-square text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Casement</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">1.2m Double Casement</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">1200 x 1050mm • £510</div>
+          </button>
+
+          <button onclick="addOpening('window-tall-60')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-grip-lines-vertical text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Full Height</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">0.6m Picture Light</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">600 x 2100mm • £490</div>
+          </button>
+
+          <button onclick="addOpening('window-tall-80')" data-cat="windows" class="glazing-option-card hidden p-2.5 bg-zinc-800/60 border border-zinc-700 hover:border-emerald-500 rounded-xl text-left transition group cursor-pointer">
+            <div class="flex justify-between items-start">
+              <i class="fa-solid fa-grip-lines-vertical text-emerald-400 text-base mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono bg-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">Full Height</span>
+            </div>
+            <div class="font-semibold text-xs text-zinc-100">0.8m Full Height Glazing</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">800 x 2100mm • £590</div>
+          </button>
+
+        </div>
+
+        <p class="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl flex items-center gap-2">
+          <i class="fa-solid fa-hand-pointer text-xs"></i>
+          <span><strong>3D Interactive Positioning:</strong> Click any window or door in 3D to drag it horizontally OR vertically up and down!</span>
+        </p>
+
+        <hr class="border-zinc-800">
+
+        <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Installed Glazing & Placement</label>
+        <div id="placed-openings-list" class="space-y-3">
+          <!-- Dynamically populated -->
+        </div>
       </div>
-      <div><h5>Garden Rooms</h5><a href="#configurator">Design Your Build</a><a href="#">Gallery</a><a href="#">Specification</a><a href="#">Brochure</a></div>
-      <div><h5>Company</h5><a href="#">About Haldane Fisher</a><a href="#">Manufacturing</a><a href="#">Careers</a><a href="#">Branch Locator</a></div>
-      <div><h5>Get In Touch</h5><a href="#">028 xxxx xxxx</a><a href="#">modular@haldane-fisher.com</a><a href="#">Request a Callback</a></div>
+
+      <!-- TAB 4: EXTRAS & DECKING -->
+      <div id="content-decking" class="tab-content hidden space-y-4">
+        <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Veranda & Accessories</label>
+
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between p-3 bg-zinc-800/40 border border-zinc-800 rounded-xl">
+            <div>
+              <div class="font-semibold text-xs text-zinc-200">Front Decking Step</div>
+              <div class="text-[11px] text-zinc-400">1.2m Timber composite platform</div>
+            </div>
+            <input type="checkbox" id="check-decking" checked onchange="toggleDecking()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-zinc-800/40 border border-zinc-800 rounded-xl">
+            <div>
+              <div class="font-semibold text-xs text-zinc-200">Show Interior Office Setup</div>
+              <div class="text-[11px] text-zinc-400">Display desk, laptop & executive chair</div>
+            </div>
+            <input type="checkbox" id="check-interior-furniture" checked onchange="toggleFurniture()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-zinc-800/40 border border-zinc-800 rounded-xl">
+            <div>
+              <div class="font-semibold text-xs text-zinc-200">Show 3D Dimension Guidelines</div>
+              <div class="text-[11px] text-zinc-400">Display width, depth & height annotations</div>
+            </div>
+            <input type="checkbox" id="check-dimensions" checked onchange="toggleDimensionsOverlay()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-zinc-800/40 border border-zinc-800 rounded-xl">
+            <div>
+              <div class="font-semibold text-xs text-zinc-200">Interior Floor Heating</div>
+              <div class="text-[11px] text-zinc-400">Electric foil heating system</div>
+            </div>
+            <input type="checkbox" id="check-heating" onchange="calculatePrice()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+          </div>
+        </div>
+      </div>
+
     </div>
-    <div class="footer-bottom">
-      <span>© 2026 Haldane Fisher. Modular design tool — internal prototype for review.</span>
-      <span>This is a working concept, not a live pricing engine.</span>
+
+    <!-- Footer Summary & Price -->
+    <div class="p-4 bg-zinc-950 border-t border-zinc-800 space-y-3 shrink-0">
+      <div class="flex items-baseline justify-between">
+        <div>
+          <div class="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">Estimated Cost</div>
+          <div class="text-2xl font-black text-emerald-400" id="price-total">£13,850</div>
+        </div>
+        <div class="text-right">
+          <span class="text-[11px] text-zinc-500">Excl. VAT & Base</span>
+          <div class="text-xs text-zinc-300 font-semibold" id="price-sqm">£879 / m²</div>
+        </div>
+      </div>
+
+      <button onclick="openQuoteModal()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/20 active:scale-[0.99] cursor-pointer">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span class="text-xs">Get Your Quote &amp; Order</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Main Viewport Area -->
+  <main class="flex-1 relative h-1/2 md:h-full bg-slate-200 overflow-hidden" id="canvas-container">
+    
+    <!-- 3D Canvas -->
+    <canvas id="canvas3d" class="w-full h-full block outline-none cursor-grab active:cursor-grabbing"></canvas>
+
+    <!-- Interactive Overlay for Popups & Editable Dimensions -->
+    <div id="opening-overlay-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+    <!-- Top Toolbar overlay -->
+    <div class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
+      
+      <!-- Camera Angle Presets -->
+      <div class="flex bg-white/90 backdrop-blur border border-slate-300/80 rounded-xl p-1 shadow-lg pointer-events-auto space-x-1 text-slate-800">
+        <button onclick="setCameraView('3d')" class="cam-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white shadow-sm cursor-pointer">
+          <i class="fa-solid fa-cube mr-1"></i> 3D View
+        </button>
+        <button onclick="setCameraView('top')" class="cam-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <i class="fa-solid fa-border-all mr-1"></i> 2D Plan
+        </button>
+        <button onclick="setCameraView('front')" class="cam-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <i class="fa-solid fa-vector-square mr-1"></i> Elevation
+        </button>
+        <button onclick="setCameraView('interior')" class="cam-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <i class="fa-solid fa-eye mr-1"></i> Inside
+        </button>
+      </div>
+
+      <!-- Sun Control -->
+      <div class="bg-white/90 backdrop-blur border border-slate-300/80 rounded-xl p-1.5 shadow-lg pointer-events-auto flex items-center space-x-2 px-3 text-slate-700">
+        <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+        <span class="text-xs font-medium text-slate-600">Sun Position</span>
+        <input type="range" id="sun-slider" min="0" max="6.28" step="0.1" value="1.2" class="w-20 range-slider bg-slate-200 h-1.5 rounded-lg appearance-none">
+      </div>
+    </div>
+
+    <!-- Footprint Badge -->
+    <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-300 px-3.5 py-2 rounded-xl text-xs text-slate-700 pointer-events-none shadow-lg flex items-center space-x-3 z-10 font-medium">
+      <div>Area: <span id="badge-area" class="text-emerald-600 font-bold">15.75 m²</span></div>
+      <div class="text-slate-300">|</div>
+      <div>Footprint: <span id="badge-footprint" class="text-slate-900 font-bold">4.50m × 3.50m</span></div>
+    </div>
+
+  </main>
+
+  <!-- Quote Modal Container -->
+  <div id="quote-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+      <button onclick="closeQuoteModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 text-lg cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Order form state -->
+      <div id="quote-form-state">
+        <div class="text-center space-y-1 mb-5">
+          <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 mx-auto text-xl mb-2">
+            <i class="fa-solid fa-house-chimney"></i>
+          </div>
+          <h3 class="text-lg font-bold text-zinc-100">Your Garden Studio Quote</h3>
+          <p class="text-xs text-zinc-400">Ready to order? Leave your details and we'll confirm your build & lead time.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1">Full Name</label>
+            <input type="text" id="quote-input-name" placeholder="John Smith" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1">Email Address</label>
+            <input type="email" id="quote-input-email" placeholder="john@example.com" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 block mb-1">Phone <span class="text-zinc-600">(optional)</span></label>
+            <input type="tel" id="quote-input-phone" placeholder="07123 456789" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-xs space-y-1.5 text-zinc-300 my-4">
+          <div class="flex justify-between"><span>Building Size:</span><span id="modal-size" class="font-medium text-zinc-100">4.5m x 3.5m</span></div>
+          <div class="flex justify-between"><span>External Material:</span><span id="modal-clad" class="font-medium text-zinc-100">Western Red Cedar</span></div>
+          <div class="flex justify-between text-emerald-400 font-bold pt-1.5 border-t border-zinc-800"><span>Estimated Cost:</span><span id="modal-price">£13,850</span></div>
+        </div>
+
+        <button onclick="submitQuote()" id="quote-submit-btn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+          <span id="quote-submit-label">Submit Order Request</span>
+        </button>
+        <p id="quote-error-msg" class="hidden text-xs text-red-400 text-center pt-1"></p>
+      </div>
+
+      <!-- Success state -->
+      <div id="quote-success-state" class="hidden text-center space-y-2 py-4">
+        <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 mx-auto text-xl mb-2">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 class="text-lg font-bold text-zinc-100">Request Sent</h3>
+        <p class="text-xs text-zinc-400">Thanks — we've got your spec and quote. We'll be in touch shortly to confirm your build.</p>
+        <button onclick="closeQuoteModal()" class="mt-3 w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold rounded-xl transition cursor-pointer">Close</button>
+      </div>
     </div>
   </div>
-</footer>
 
-<script>
-/* ============ OPENING SPECS ============ */
-const OPENING_SPECS = {
-  std:    { w:1.0, h:1.1,  label:'Standard Window', floor:false, cost:150 },
-  lrg:    { w:1.6, h:1.4,  label:'Large Window',    floor:false, cost:250 },
-  door:   { w:0.95, h:2.0, label:'External Door',   floor:true,  cost:900 },
-  bifold: { w:2.4, h:null, label:'Bi-fold Door',     floor:true,  cost:2400 },
-};
-const WALL_LABELS = { front:'Front (garden-facing)', back:'Back', left:'Left', right:'Right' };
+  <script>
+    // Procedural High-Res Texture Generator for Photorealistic Materials
+    function createProceduralTexture(type) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
 
-/* ============ STATE ============ */
-let idCounter = 5;
-const state = {
-  width:5, length:4, eaves:2.4, roof:'pitched',
-  openings:[
-    { id:'op1', wall:'front', type:'door', u:0.16 },
-    { id:'op2', wall:'front', type:'std',  u:0.52 },
-    { id:'op3', wall:'front', type:'std',  u:0.80 },
-    { id:'op4', wall:'left',  type:'lrg',  u:0.5 },
-  ],
-  roofWin:0,
-  cladding:'larch', colour:'#B08655',
-  insulation:'standard', fitout:'shell'
-};
-let currentStep = 1;
-const totalSteps = 5;
-let currentTool = 'std';
+      if (type === 'cedar' || type === 'oak') {
+        const baseColor = type === 'cedar' ? '#b86a32' : '#aa6d38';
+        const darkGroove = type === 'cedar' ? '#4a2308' : '#42240b';
+        
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(0, 0, 1024, 1024);
 
-function wallLength(wall){ return (wall==='front'||wall==='back') ? state.width : state.length; }
+        // Vertical Slats with Shadow Grooves & Wood Grains
+        const slatWidth = 32;
+        for (let x = 0; x < 1024; x += slatWidth) {
+          ctx.fillStyle = darkGroove;
+          ctx.fillRect(x, 0, 3, 1024);
+          
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.fillRect(x + 3, 0, 2, 1024);
 
-/* ============ PRICE LOGIC ============ */
-const INSUL_BASE = { standard:1300, premium:1550, passive:1850 };
-const FITOUT_RATE = { shell:0, full:480 };
-const ROOF_ADJ = { pitched:0, flat:-0.05 };
-const ROOFLIGHT_COST = 320;
+          ctx.fillStyle = 'rgba(0,0,0,0.06)';
+          for (let g = 0; g < 5; g++) {
+            const gx = x + Math.random() * (slatWidth - 6) + 3;
+            ctx.fillRect(gx, 0, 1 + Math.random() * 1.5, 1024);
+          }
+        }
+      } else if (type === 'composite') {
+        ctx.fillStyle = '#1e2124';
+        ctx.fillRect(0, 0, 1024, 1024);
+        for (let x = 0; x < 1024; x += 24) {
+          ctx.fillStyle = '#0c0e10';
+          ctx.fillRect(x, 0, 3, 1024);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          ctx.fillRect(x + 3, 0, 1, 1024);
+        }
+      } else if (type === 'render') {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, 1024, 1024);
+        for (let i = 0; i < 20000; i++) {
+          ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.04})`;
+          ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2);
+        }
+      } else if (type === 'interior-floor') {
+        ctx.fillStyle = '#d4a373';
+        ctx.fillRect(0, 0, 1024, 1024);
+        const boardHeight = 64;
+        for (let y = 0; y < 1024; y += boardHeight) {
+          ctx.fillStyle = '#784c1e';
+          ctx.fillRect(0, y, 1024, 2);
+          for (let g = 0; g < 4; g++) {
+            ctx.fillStyle = 'rgba(0,0,0,0.04)';
+            ctx.fillRect(0, y + Math.random() * boardHeight, 1024, 1);
+          }
+        }
+      } else if (type === 'grass-disc') {
+        const grad = ctx.createRadialGradient(512, 512, 50, 512, 512, 500);
+        grad.addColorStop(0, '#86efac');
+        grad.addColorStop(0.4, '#4ade80');
+        grad.addColorStop(0.85, '#22c55e');
+        grad.addColorStop(1, 'rgba(241, 245, 249, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1024, 1024);
+      }
 
-function computeAreaAndPrice(){
-  const floorArea = state.width * state.length;
-  const perimeter = 2 * (state.width + state.length);
-  const wallArea = perimeter * state.eaves;
-  const CLAD_RATE = { larch:0, cedar:18, composite:25 };
-  let base = INSUL_BASE[state.insulation] * floorArea;
-  base *= (1 + ROOF_ADJ[state.roof]);
-  let claddingCost = wallArea * CLAD_RATE[state.cladding];
-  let windowsCost = state.openings.reduce((sum,o)=> sum + OPENING_SPECS[o.type].cost, 0) + state.roofWin * ROOFLIGHT_COST;
-  let fitoutCost = FITOUT_RATE[state.fitout] * floorArea;
-  return { floorArea, total: base + claddingCost + windowsCost + fitoutCost };
-}
-function fmtGBP(n){ return '£' + Math.round(n).toLocaleString('en-GB'); }
-function updatePricePanel(){
-  const { floorArea, total } = computeAreaAndPrice();
-  document.getElementById('areaAmt').textContent = floorArea.toFixed(1) + ' m²';
-  document.getElementById('priceAmt').innerHTML = fmtGBP(total) + '<small>+VAT</small>';
-  document.getElementById('dimsTag').textContent = state.width.toFixed(1) + ' × ' + state.length.toFixed(1) + ' m';
-}
-
-/* ============ PROCEDURAL TEXTURES ============ */
-function makeCladTexture(){
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#e9e9e9'; ctx.fillRect(0,0,256,256);
-  const plankW = 22;
-  for(let x=0; x<256; x+=plankW){
-    const shade = 205 + Math.floor(Math.random()*45);
-    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-    ctx.fillRect(x,0,plankW-1,256);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(x+plankW-2,0,2,256);
-    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-    for(let i=0;i<5;i++){
-      ctx.beginPath();
-      const gy = Math.random()*256;
-      ctx.moveTo(x+2, gy);
-      ctx.bezierCurveTo(x+8,gy+14,x+16,gy-14,x+plankW-3, gy+(Math.random()*24-12));
-      ctx.stroke();
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      return texture;
     }
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.encoding = THREE.sRGBEncoding;
-  return tex;
-}
-function makeRoofTexture(dark){
-  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = dark ? '#2c2f2e' : '#4a4e4c'; ctx.fillRect(0,0,128,128);
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2;
-  for(let y=0;y<128;y+=14){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(128,y); ctx.stroke(); }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.encoding = THREE.sRGBEncoding;
-  return tex;
-}
-function makeDeckTexture(){
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#B79068'; ctx.fillRect(0,0,256,256);
-  for(let y=0;y<256;y+=18){
-    const shade = 150 + Math.floor(Math.random()*40);
-    ctx.fillStyle = `rgb(${shade+30},${shade},${shade-40})`;
-    ctx.fillRect(0,y,256,16);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(0,y+16,256,2);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.encoding = THREE.sRGBEncoding;
-  return tex;
-}
-function makeGrassTexture(){
-  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#5C8A46'; ctx.fillRect(0,0,256,256);
-  for(let i=0;i<4500;i++){
-    const x = Math.random()*256, y = Math.random()*256;
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,40,0,0.10)';
-    ctx.fillRect(x,y,2,2);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.encoding = THREE.sRGBEncoding;
-  tex.repeat.set(10,10);
-  return tex;
-}
-function makeContactShadowTexture(){
-  const c = document.createElement('canvas'); c.width=256; c.height=256;
-  const ctx = c.getContext('2d');
-  const g = ctx.createRadialGradient(128,128,20,128,128,128);
-  g.addColorStop(0,'rgba(0,0,0,0.4)');
-  g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle = g; ctx.fillRect(0,0,256,256);
-  return new THREE.CanvasTexture(c);
-}
-function makeEnvironment(renderer){
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  pmrem.compileEquirectangularShader();
-  const envScene = new THREE.Scene();
-  const skyMat = new THREE.ShaderMaterial({
-    uniforms:{ top:{value:new THREE.Color(0x8fc6e8)}, bottom:{value:new THREE.Color(0xf7f3e9)} },
-    vertexShader:`varying vec3 vWorldPosition; void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vWorldPosition = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
-    fragmentShader:`varying vec3 vWorldPosition; uniform vec3 top; uniform vec3 bottom; void main(){ float h = clamp(normalize(vWorldPosition).y*0.6+0.4,0.0,1.0); gl_FragColor = vec4(mix(bottom, top, h), 1.0); }`,
-    side: THREE.BackSide
-  });
-  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50,32,32), skyMat));
-  const rt = pmrem.fromScene(envScene, 0.03);
-  pmrem.dispose();
-  return rt.texture;
-}
 
-/* ============ SCENE SETUP ============ */
-function makeScene(holderId, interactive){
-  const holder = document.getElementById(holderId);
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xBFE3F0);
-  scene.fog = new THREE.Fog(0xBFE3F0, 15, 32);
+    const container = document.getElementById('canvas-container');
+    const canvas = document.getElementById('canvas3d');
 
-  const camera = new THREE.PerspectiveCamera(38, holder.clientWidth/holder.clientHeight, 0.1, 100);
-  const renderer = new THREE.WebGLRenderer({ antialias:true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(holder.clientWidth, holder.clientHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  holder.appendChild(renderer.domElement);
+    function updateCanvasSize() {
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+    window.addEventListener('resize', updateCanvasSize);
 
-  scene.environment = makeEnvironment(renderer);
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
+    
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf1f5f9);
 
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x6b8a55, 0.85);
-  scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff3dd, 1.6);
-  sun.position.set(8, 11, 6);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024,1024);
-  sun.shadow.camera.left = -10; sun.shadow.camera.right = 10;
-  sun.shadow.camera.top = 10; sun.shadow.camera.bottom = -10;
-  sun.shadow.bias = -0.0015;
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xdceeff, 0.35);
-  fill.position.set(-6,5,-4);
-  scene.add(fill);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
+    camera.position.set(8.5, 4.2, 9.5);
 
-  const groundTex = makeGrassTexture();
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(16,40), new THREE.MeshStandardMaterial({ map: groundTex, roughness:1 }));
-  ground.rotation.x = -Math.PI/2;
-  ground.receiveShadow = true;
-  scene.add(ground);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
 
-  const fenceMat = new THREE.MeshStandardMaterial({ color:0x7A6248, roughness:0.9 });
-  const fence = new THREE.Mesh(new THREE.BoxGeometry(14,1.1,0.1), fenceMat);
-  fence.position.set(0, 0.55, -7);
-  fence.castShadow = true;
-  scene.add(fence);
-  const bushMat = new THREE.MeshStandardMaterial({ color:0x3F6B34, roughness:1 });
-  [[-6.5,-6.5],[6.5,-6.5],[-6.8,4],[7,3]].forEach(([x,z])=>{
-    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.7+Math.random()*0.3,10,8), bushMat);
-    bush.position.set(x, 0.6, z);
-    bush.castShadow = true;
-    scene.add(bush);
-  });
-
-  const group = new THREE.Group();
-  scene.add(group);
-
-  let controls = null;
-  if(interactive && THREE.OrbitControls){
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.minDistance = 3;
-    controls.maxDistance = 22;
-    controls.maxPolarAngle = Math.PI/2 - 0.03;
-    controls.target.set(0, 1.2, 0);
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.0;
-    renderer.domElement.addEventListener('pointerdown', ()=> controls.autoRotate = false);
-  }
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
-  return { holder, scene, camera, renderer, group, controls, interactive, clickPlanes:[] };
-}
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
 
-const heroScene = makeScene('hero-canvas-holder', false);
-const mainScene = makeScene('canvas-holder', true);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xdbeade, 0.7);
+    hemiLight.position.set(0, 30, 0);
+    scene.add(hemiLight);
 
-/* ============ BUILDING GEOMETRY ============ */
-function addWindow(group, materials, x, y, z, ww, wh, rotY){
-  const grp = new THREE.Group();
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(ww, wh, 0.04), materials.glass);
-  grp.add(glass);
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(ww+0.08, wh+0.08, 0.05), materials.frame);
-  frame.position.z = -0.01;
-  grp.add(frame);
-  const sill = new THREE.Mesh(new THREE.BoxGeometry(ww+0.16, 0.05, 0.14), materials.frame);
-  sill.position.set(0, -wh/2-0.05, 0.05);
-  grp.add(sill);
-  grp.position.set(x,y,z);
-  grp.rotation.y = rotY || 0;
-  grp.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
-  group.add(grp);
-}
-function addDoor(group, materials, x, y, z, dw, dh, rotY){
-  const grp = new THREE.Group();
-  const door = new THREE.Mesh(new THREE.BoxGeometry(dw, dh, 0.06), materials.door);
-  grp.add(door);
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.28,8), materials.handle);
-  handle.rotation.z = Math.PI/2;
-  handle.position.set(dw/2-0.1, 0, 0.045);
-  grp.add(handle);
-  grp.position.set(x,y,z);
-  grp.rotation.y = rotY || 0;
-  grp.traverse(o=>{ if(o.isMesh){ o.castShadow=true; } });
-  group.add(grp);
-}
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.4);
+    sunLight.position.set(12, 18, 14);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.bias = -0.0001;
+    const shadowD = 10;
+    sunLight.shadow.camera.left = -shadowD;
+    sunLight.shadow.camera.right = shadowD;
+    sunLight.shadow.camera.top = shadowD;
+    sunLight.shadow.camera.bottom = -shadowD;
+    scene.add(sunLight);
 
-function openingTransform(wall, u, spec, eaves){
-  const w = state.width, l = state.length;
-  const len = wallLength(wall);
-  const centerOffset = (u-0.5)*len;
-  const floorY = 0.14;
-  const vertH = spec.h || eaves*0.72;
-  const centerY = spec.floor ? floorY + vertH/2 : floorY + eaves*0.52;
-  let x,z,rotY;
-  if(wall==='front'){ x=centerOffset; z=l/2+0.03; rotY=0; }
-  else if(wall==='back'){ x=centerOffset; z=-l/2-0.03; rotY=Math.PI; }
-  else if(wall==='left'){ x=-w/2-0.03; z=centerOffset; rotY=-Math.PI/2; }
-  else { x=w/2+0.03; z=centerOffset; rotY=Math.PI/2; }
-  return { x, y:centerY, z, rotY, w:spec.w, h:vertH };
-}
+    // Lawn Patch
+    const grassTexture = createProceduralTexture('grass-disc');
+    const groundGeo = new THREE.PlaneGeometry(24, 24);
+    const groundMat = new THREE.MeshBasicMaterial({ map: grassTexture, transparent: true });
+    const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.position.y = 0;
+    scene.add(groundMesh);
 
-function buildHouse(sceneObj, s){
-  const { group } = sceneObj;
-  while(group.children.length) group.remove(group.children[0]);
-  sceneObj.clickPlanes = [];
+    const shadowPlaneGeo = new THREE.PlaneGeometry(30, 30);
+    const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.22 });
+    const shadowMesh = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.001;
+    shadowMesh.receiveShadow = true;
+    scene.add(shadowMesh);
 
-  const w = s.width, l = s.length, h = s.eaves;
-  const overhang = 0.3;
-  const pitchRad = 27 * Math.PI/180;
+    let config = {
+      width: 4.5,
+      depth: 3.5,
+      height: 2.74,
+      overhang: 0.40,
+      roofType: 'flat',
+      roofPitch: 3,
+      cladding: 'cedar',
+      frameColor: '#18181b',
+      showDimensions: true,
+      showFurniture: true,
+      targetWall: 'front', // Wall to add new glazing onto
+      openings: [
+        { id: '1', type: 'bifold-240', wall: 'front', x: 0 },
+        { id: '2', type: 'window-high-120', wall: 'right', x: 0.8, y: 1.95 }
+      ],
+      hasDecking: true,
+      hasHeating: false
+    };
 
-  const cladTex = makeCladTexture();
-  cladTex.repeat.set(Math.max(2, w*1.4), Math.max(1, h*1.4));
-  const wallMat = new THREE.MeshStandardMaterial({ map:cladTex, color:s.colour, roughness:0.85, metalness:0.02 });
+    const textures = {
+      cedar: createProceduralTexture('cedar'),
+      oak: createProceduralTexture('oak'),
+      composite: createProceduralTexture('composite'),
+      render: createProceduralTexture('render'),
+      floor: createProceduralTexture('interior-floor')
+    };
 
-  const frameMat = new THREE.MeshStandardMaterial({ color:0x2B2E2C, roughness:0.4, metalness:0.35 });
-  const glassMat = new THREE.MeshPhysicalMaterial({ color:0xBFE3F0, roughness:0.05, metalness:0.15, transparent:true, opacity:0.5, clearcoat:0.7, envMapIntensity:1.3 });
-  const roofTex = makeRoofTexture(s.roof==='flat');
-  roofTex.repeat.set(Math.max(2,l), Math.max(2,w));
-  const roofMat = new THREE.MeshStandardMaterial({ map:roofTex, color:0xffffff, roughness:0.8 });
-  const deckTex = makeDeckTexture();
-  deckTex.repeat.set(w/0.9, 1.6/0.35);
-  const deckMat = new THREE.MeshStandardMaterial({ map:deckTex, roughness:0.9 });
-  const plinthMat = new THREE.MeshStandardMaterial({ color:0x9a9a90, roughness:0.9 });
-  const doorMat = new THREE.MeshStandardMaterial({ color:0x24211f, roughness:0.45, metalness:0.15 });
-  const handleMat = new THREE.MeshStandardMaterial({ color:0xC9CDC6, roughness:0.25, metalness:0.8 });
-  const materials = { glass:glassMat, frame:frameMat, door:doorMat, handle:handleMat };
+    let roomGroup = new THREE.Group();
+    scene.add(roomGroup);
 
-  // contact shadow
-  const shadowTex = makeContactShadowTexture();
-  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(w,l)*1.7, Math.max(w,l)*1.7), new THREE.MeshBasicMaterial({ map:shadowTex, transparent:true, depthWrite:false }));
-  shadowPlane.rotation.x = -Math.PI/2;
-  shadowPlane.position.y = 0.015;
-  group.add(shadowPlane);
+    let annotationGroup = new THREE.Group();
+    scene.add(annotationGroup);
 
-  // plinth
-  const plinth = new THREE.Mesh(new THREE.BoxGeometry(w+0.12,0.14,l+0.12), plinthMat);
-  plinth.position.y = 0.07;
-  plinth.receiveShadow = true;
-  group.add(plinth);
+    let draggableObjects = [];
+    let selectedOpeningId = null;
+    let isMoveModeActive = false;
+    let dimensionAnchors = [];
+    let isEditingDimension = false;
+    let isDraggingOpening = false;
+    let draggedOpeningId = null;
+    let dragWallPlane = new THREE.Plane();
+    let dragPlaneIntersect = new THREE.Vector3();
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
 
-  // walls
-  const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), wallMat);
-  wallMesh.position.y = h/2 + 0.14;
-  wallMesh.castShadow = true; wallMesh.receiveShadow = true;
-  group.add(wallMesh);
-  const wallTopY = h + 0.14;
-
-  // roof
-  if(s.roof === 'pitched'){
-    const roofRise = (w/2) * Math.tan(pitchRad);
-    const halfSpan = w/2 + overhang;
-    const slantLen = Math.sqrt(halfSpan*halfSpan + roofRise*roofRise);
-    const actualAngle = Math.atan2(roofRise, halfSpan);
-    const roofDepth = l + overhang*2;
-    [1,-1].forEach(sign=>{
-      const plane = new THREE.Mesh(new THREE.BoxGeometry(slantLen, 0.07, roofDepth), roofMat);
-      plane.position.set(sign*halfSpan/2, wallTopY + roofRise/2, 0);
-      plane.rotation.z = -sign*actualAngle;
-      plane.castShadow = true; plane.receiveShadow = true;
-      group.add(plane);
-    });
-    const gShape = new THREE.Shape();
-    gShape.moveTo(-w/2, 0); gShape.lineTo(w/2, 0); gShape.lineTo(0, roofRise); gShape.lineTo(-w/2,0);
-    const gableGeo = new THREE.ExtrudeGeometry(gShape, { depth:0.05, bevelEnabled:false });
-    [1,-1].forEach(sign=>{
-      const gable = new THREE.Mesh(gableGeo, wallMat);
-      gable.position.set(0, wallTopY, sign>0 ? l/2 : -l/2-0.05);
-      gable.castShadow = true; gable.receiveShadow = true;
-      group.add(gable);
-    });
-    for(let i=0;i<s.roofWin;i++){
-      const n = Math.max(s.roofWin,1);
-      const rl = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.04,1.0), glassMat);
-      const zpos = -l/2 + (l/(n+1))*(i+1);
-      rl.position.set(w/4, wallTopY + roofRise*0.55, zpos);
-      rl.rotation.z = -actualAngle;
-      group.add(rl);
+    // Helper functions for UK Standard Opening Dimensions
+    function getOpeningWidth(type) {
+      switch(type) {
+        case 'bifold-180': return 1.8;
+        case 'bifold-240': return 2.4;
+        case 'bifold-wide': return 2.8;
+        case 'bifold-360': return 3.6;
+        case 'sliding-180': return 1.8;
+        case 'sliding-210': return 2.1;
+        case 'sliding-240': return 2.4;
+        case 'french-150': return 1.5;
+        case 'french-180': return 1.8;
+        case 'single-door': return 0.9;
+        case 'window-high-120': return 1.2;
+        case 'window-high-180': return 1.8;
+        case 'window-casement-60': return 0.6;
+        case 'window-casement-120': return 1.2;
+        case 'window-tall-60': return 0.6;
+        case 'window-tall-80': return 0.8;
+        default: return 1.2;
+      }
     }
-  } else {
-    const flat = new THREE.Mesh(new THREE.BoxGeometry(w+overhang*2, 0.12, l+overhang*2), roofMat);
-    flat.position.y = wallTopY + 0.06;
-    flat.castShadow = true; flat.receiveShadow = true;
-    group.add(flat);
-    const fascia = new THREE.Mesh(new THREE.BoxGeometry(w+overhang*2, 0.22, 0.03), frameMat);
-    fascia.position.set(0, wallTopY - 0.02, l/2+overhang);
-    group.add(fascia);
-  }
 
-  // deck
-  const deckW = Math.min(w, 4.5);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.1, 1.6), deckMat);
-  deck.position.set(0, 0.05, l/2 + 0.8);
-  deck.receiveShadow = true; deck.castShadow = true;
-  group.add(deck);
-  for(let dx=-deckW/2+0.15; dx<=deckW/2-0.1; dx+=0.9){
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.15,0.08), plinthMat);
-    leg.position.set(dx, -0.02, l/2+1.5);
-    group.add(leg);
-  }
-
-  // placed openings
-  s.openings.forEach(o=>{
-    const spec = OPENING_SPECS[o.type];
-    const t = openingTransform(o.wall, o.u, spec, h);
-    if(o.type === 'door'){
-      addDoor(group, materials, t.x, t.y, t.z, t.w, t.h, t.rotY);
-    } else {
-      addWindow(group, materials, t.x, t.y, t.z, t.w, t.h, t.rotY);
+    function getOpeningHeight(type) {
+      if (type.startsWith('window-high')) return 0.50; // Clerestory / Transom
+      if (type.startsWith('window-casement')) return 1.05; // Standard UK casement window
+      if (type.startsWith('window-tall')) return 2.10; // Full height picture light
+      return 2.10; // Standard UK Door Height (2100mm)
     }
-  });
 
-  // invisible click planes for the interactive viewer
-  if(sceneObj.interactive){
-    const wallDefs = [
-      { name:'front', ww:w, wh:h, pos:[0, h/2+0.14, l/2+0.02], rotY:0 },
-      { name:'back',  ww:w, wh:h, pos:[0, h/2+0.14, -l/2-0.02], rotY:Math.PI },
-      { name:'left',  ww:l, wh:h, pos:[-w/2-0.02, h/2+0.14, 0], rotY:-Math.PI/2 },
-      { name:'right', ww:l, wh:h, pos:[w/2+0.02, h/2+0.14, 0], rotY:Math.PI/2 },
-    ];
-    wallDefs.forEach(wd=>{
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(wd.ww, wd.wh), new THREE.MeshBasicMaterial({ visible:false }));
-      plane.position.set(wd.pos[0], wd.pos[1], wd.pos[2]);
-      plane.rotation.y = wd.rotY;
-      plane.userData.wall = wd.name;
-      group.add(plane);
-      sceneObj.clickPlanes.push(plane);
-    });
-  }
-
-  const maxDim = Math.max(w, l, h*2.2);
-  sceneObj.camera.position.set(maxDim*0.95, maxDim*0.62, maxDim*1.15);
-  sceneObj.camera.lookAt(0, h*0.5, 0);
-  if(sceneObj.controls){ sceneObj.controls.target.set(0, h*0.5+0.1, 0); sceneObj.controls.update(); }
-}
-
-let heroRotation = 0.5;
-function renderLoop(){
-  heroScene.group.rotation.y = heroRotation;
-  heroRotation += 0.0035;
-  heroScene.renderer.render(heroScene.scene, heroScene.camera);
-  if(mainScene.controls) mainScene.controls.update();
-  mainScene.renderer.render(mainScene.scene, mainScene.camera);
-  requestAnimationFrame(renderLoop);
-}
-function refreshAll(){
-  buildHouse(heroScene, state);
-  buildHouse(mainScene, state);
-  updatePricePanel();
-  renderPlacedList();
-}
-window.addEventListener('resize', ()=>{
-  [ {s:heroScene,id:'hero-canvas-holder'}, {s:mainScene,id:'canvas-holder'} ].forEach(o=>{
-    const holder = document.getElementById(o.id);
-    o.s.camera.aspect = holder.clientWidth / holder.clientHeight;
-    o.s.camera.updateProjectionMatrix();
-    o.s.renderer.setSize(holder.clientWidth, holder.clientHeight);
-  });
-});
-
-/* ============ CLICK-TO-PLACE ============ */
-function showStatus(msg){
-  const el = document.getElementById('placeStatus');
-  el.textContent = msg;
-  el.style.opacity = 1;
-  clearTimeout(window._stTimer);
-  window._stTimer = setTimeout(()=> el.style.opacity = 0, 2200);
-}
-function placeOpening(wall, uRaw, type){
-  const spec = OPENING_SPECS[type];
-  const len = wallLength(wall);
-  const halfW = spec.w/2;
-  const margin = Math.min(0.45, halfW/len + 0.03);
-  const u = Math.min(1-margin, Math.max(margin, uRaw));
-  const centerX = (u-0.5)*len;
-  const collide = state.openings.some(o=>{
-    if(o.wall !== wall) return false;
-    const oSpec = OPENING_SPECS[o.type];
-    const oCenter = (o.u-0.5)*len;
-    return Math.abs(centerX-oCenter) < (spec.w/2 + oSpec.w/2 + 0.15);
-  });
-  if(collide){ showStatus('No room there — try another spot on this wall.'); return; }
-  state.openings.push({ id:'op'+(idCounter++), wall, type, u });
-  showStatus(spec.label + ' placed on the ' + WALL_LABELS[wall].split(' ')[0].toLowerCase() + ' wall.');
-  refreshAll();
-}
-function removeOpeningAt(wall, xLocal){
-  const len = wallLength(wall);
-  let bestIdx = -1, bestDist = Infinity;
-  state.openings.forEach((o,idx)=>{
-    if(o.wall !== wall) return;
-    const oCenter = (o.u-0.5)*len;
-    const oSpec = OPENING_SPECS[o.type];
-    if(Math.abs(xLocal-oCenter) <= oSpec.w/2 + 0.1){
-      const d = Math.abs(xLocal-oCenter);
-      if(d < bestDist){ bestDist = d; bestIdx = idx; }
+    function getOpeningTitle(type) {
+      switch(type) {
+        case 'bifold-180': return '1.8m Bifold Set';
+        case 'bifold-240': return '2.4m Bifold Set';
+        case 'bifold-wide': return '2.8m Bifold Set';
+        case 'bifold-360': return '3.6m Bifold Set';
+        case 'sliding-180': return '1.8m Sliding Patio';
+        case 'sliding-210': return '2.1m Sliding Patio';
+        case 'sliding-240': return '2.4m Sliding Patio';
+        case 'french-150': return '1.5m French Doors';
+        case 'french-180': return '1.8m French Doors';
+        case 'single-door': return '0.9m Single Door';
+        case 'window-high-120': return '1.2m Clerestory Window';
+        case 'window-high-180': return '1.8m Transom Window';
+        case 'window-casement-60': return '0.6m Casement Window';
+        case 'window-casement-120': return '1.2m Casement Window';
+        case 'window-tall-60': return '0.6m Picture Window';
+        case 'window-tall-80': return '0.8m Picture Window';
+        default: return 'Glazing Unit';
+      }
     }
-  });
-  if(bestIdx >= 0){
-    state.openings.splice(bestIdx,1);
-    showStatus('Removed.');
-    refreshAll();
-  } else {
-    showStatus('No opening there to remove.');
-  }
-}
 
-const raycaster = new THREE.Raycaster();
-const pointerNDC = new THREE.Vector2();
-let downInfo = null;
-mainScene.renderer.domElement.addEventListener('pointerdown', (e)=>{ downInfo = {x:e.clientX, y:e.clientY, t:Date.now()}; });
-mainScene.renderer.domElement.addEventListener('pointerup', (e)=>{
-  if(!downInfo) return;
-  const dx = e.clientX-downInfo.x, dy = e.clientY-downInfo.y;
-  const moved = Math.sqrt(dx*dx+dy*dy);
-  const dt = Date.now()-downInfo.t;
-  downInfo = null;
-  if(moved > 6 || dt > 500) return;
-  if(currentStep !== 2) return;
-  const rect = mainScene.renderer.domElement.getBoundingClientRect();
-  pointerNDC.x = ((e.clientX-rect.left)/rect.width)*2-1;
-  pointerNDC.y = -((e.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(pointerNDC, mainScene.camera);
-  const hits = raycaster.intersectObjects(mainScene.clickPlanes);
-  if(!hits.length) return;
-  const hit = hits[0];
-  const wall = hit.object.userData.wall;
-  const local = hit.object.worldToLocal(hit.point.clone());
-  const len = wallLength(wall);
-  if(currentTool === 'remove'){
-    removeOpeningAt(wall, local.x);
-  } else {
-    placeOpening(wall, local.x/len + 0.5, currentTool);
-  }
-});
+    function getOpeningYPosition(op) {
+      if (typeof op === 'object' && op.y !== undefined) return op.y;
+      const type = typeof op === 'object' ? op.type : op;
+      if (type.startsWith('window-high')) return 1.95; // Mounted high near soffit
+      if (type.startsWith('window-casement')) return 1.35; // Standard cill height ~850mm above finished floor
+      if (type.startsWith('window-tall')) return 1.25; // Floor-aligned tall window
+      return 0.20 + getOpeningHeight(type)/2; // Floor aligned doors
+    }
 
-document.querySelectorAll('.tool-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('selected'));
-    btn.classList.add('selected');
-    currentTool = btn.dataset.tool;
-  });
-});
+    function build3DRoom() {
+      while(roomGroup.children.length > 0) roomGroup.remove(roomGroup.children[0]);
+      while(annotationGroup.children.length > 0) annotationGroup.remove(annotationGroup.children[0]);
+      draggableObjects = [];
 
-function renderPlacedList(){
-  const el = document.getElementById('placedList');
-  if(!state.openings.length){
-    el.innerHTML = '<div class="empty-hint">No windows or doors placed yet — pick a piece above and click a wall in the 3D view.</div>';
-    return;
-  }
-  el.innerHTML = state.openings.map(o=>{
-    const spec = OPENING_SPECS[o.type];
-    return `<div class="placed-row"><span>${spec.label} — ${WALL_LABELS[o.wall]}</span><button data-remove="${o.id}">✕</button></div>`;
-  }).join('');
-  el.querySelectorAll('[data-remove]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.openings = state.openings.filter(o=>o.id !== btn.dataset.remove);
-      refreshAll();
+      const w = config.width;
+      const d = config.depth;
+      const h = config.height;
+      const wallThick = 0.16;
+
+      const activeCladTex = textures[config.cladding];
+      activeCladTex.repeat.set(w * 0.8, h * 0.6);
+
+      const wallMaterial = new THREE.MeshStandardMaterial({
+        map: activeCladTex,
+        roughness: 0.5,
+        metalness: 0.05
+      });
+
+      const frameMaterial = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(config.frameColor),
+        roughness: 0.25,
+        metalness: 0.8
+      });
+
+      const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0.1,
+        roughness: 0.05,
+        transmission: 0.95,
+        transparent: true,
+        opacity: 1,
+        ior: 1.52,
+        reflectivity: 0.9,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        side: THREE.DoubleSide
+      });
+
+      // 1. Foundation Base Step
+      const baseGeo = new THREE.BoxGeometry(w + 0.04, 0.2, d + 0.04);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.8 });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.position.set(0, 0.1, 0);
+      baseMesh.receiveShadow = true;
+      baseMesh.castShadow = true;
+      roomGroup.add(baseMesh);
+
+      // 2. Interior Floorboards
+      const floorGeo = new THREE.PlaneGeometry(w - wallThick, d - wallThick);
+      const floorMat = new THREE.MeshStandardMaterial({ map: textures.floor, roughness: 0.4 });
+      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.set(0, 0.201, 0);
+      floorMesh.receiveShadow = true;
+      roomGroup.add(floorMesh);
+
+      // 3. Interior Back & Side Walls Drywall
+      const intWallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 });
+      const intBackGeo = new THREE.PlaneGeometry(w - wallThick*2, h);
+      const intBack = new THREE.Mesh(intBackGeo, intWallMat);
+      intBack.position.set(0, h/2 + 0.2, -d/2 + wallThick + 0.001);
+      roomGroup.add(intBack);
+
+      const intLeftGeo = new THREE.PlaneGeometry(d - wallThick*2, h);
+      const intLeft = new THREE.Mesh(intLeftGeo, intWallMat);
+      intLeft.rotation.y = Math.PI / 2;
+      intLeft.position.set(-w/2 + wallThick + 0.001, h/2 + 0.2, 0);
+      roomGroup.add(intLeft);
+
+      const intRight = intLeft.clone();
+      intRight.rotation.y = -Math.PI / 2;
+      intRight.position.x = w/2 - wallThick - 0.001;
+      roomGroup.add(intRight);
+
+      // 4. Interior Office Setup
+      if (config.showFurniture) {
+        buildInteriorFurniture(w, d, h);
+      }
+
+      // Mono-pitch (flat roof type) wall heights: eaves stay low at the BACK
+      // (boundary side, keeps within Permitted Development eaves limits) and
+      // rise towards the FRONT (garden-facing feature elevation).
+      const monoActive = config.roofType === 'flat';
+      const monoPitchRad = monoActive ? (config.roofPitch || 0) * Math.PI / 180 : 0;
+      const monoRise = monoActive ? d * Math.tan(monoPitchRad) : 0;
+      const frontWallH = h + monoRise; // tall side (front, garden-facing)
+      const backWallH = h;             // low side (back, boundary-facing)
+      // height at local-x u along a wall (u spans -wallLength/2..+wallLength/2)
+      const leftWallHeightAt = (u) => backWallH + (frontWallH - backWallH) * ((u + d / 2) / d);
+      const rightWallHeightAt = (u) => backWallH + (frontWallH - backWallH) * ((-u + d / 2) / d);
+
+      // Helper to render segmented wall with cutouts for openings.
+      // wallHeightAt: either a constant number, or a function(u) => wall-top
+      // height (above the 0.2 foundation) at local-x coordinate u, used to
+      // slope the side walls under a mono-pitch roof.
+      function buildWallWithOpenings(wallName, wallLength, wallX, wallZ, wallRotY, wallHeightAt) {
+        const wallGroup = new THREE.Group();
+        wallGroup.position.set(wallX, 0, wallZ);
+        wallGroup.rotation.y = wallRotY;
+
+        const heightAt = typeof wallHeightAt === 'function' ? wallHeightAt : () => wallHeightAt;
+
+        // Builds a wall panel spanning local-x [uStart,uEnd] from absolute
+        // height yBottom up to the wall top (flat box if the top is level
+        // across the span, or a sloped panel if it isn't).
+        function buildPanel(uStart, uEnd, yBottom, yTopOverride) {
+          const width = uEnd - uStart;
+          if (width <= 0.05) return;
+          const topStart = yTopOverride !== undefined ? yTopOverride : (heightAt(uStart) + 0.2);
+          const topEnd = yTopOverride !== undefined ? yTopOverride : (heightAt(uEnd) + 0.2);
+          if (Math.abs(topStart - topEnd) < 0.001) {
+            const geo = new THREE.BoxGeometry(width, topStart - yBottom, wallThick);
+            const mesh = new THREE.Mesh(geo, wallMaterial);
+            mesh.position.set((uStart + uEnd) / 2, (yBottom + topStart) / 2, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            wallGroup.add(mesh);
+          } else {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, yBottom);
+            shape.lineTo(width, yBottom);
+            shape.lineTo(width, topEnd);
+            shape.lineTo(0, topStart);
+            shape.lineTo(0, yBottom);
+            const geo = new THREE.ExtrudeGeometry(shape, { depth: wallThick, bevelEnabled: false });
+            geo.translate(-width / 2, 0, -wallThick / 2);
+            const mesh = new THREE.Mesh(geo, wallMaterial);
+            mesh.position.set((uStart + uEnd) / 2, 0, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            wallGroup.add(mesh);
+          }
+        }
+
+        const wallOpenings = config.openings.filter(o => o.wall === wallName);
+
+        if (wallOpenings.length === 0) {
+          buildPanel(-wallLength / 2, wallLength / 2, 0.2);
+        } else {
+          wallOpenings.sort((a, b) => a.x - b.x);
+
+          let currentX = -wallLength / 2;
+          wallOpenings.forEach(op => {
+            const opWidth = getOpeningWidth(op.type);
+            const opHeight = getOpeningHeight(op.type);
+            const posY = getOpeningYPosition(op);
+            const holeLeft = op.x - opWidth / 2;
+            const holeRight = op.x + opWidth / 2;
+
+            // Left solid segment before hole (follows the sloped top)
+            buildPanel(currentX, holeLeft, 0.2);
+
+            // Top Lintel and Bottom Wall (for windows)
+            const holeBottomY = posY - opHeight / 2;
+            const holeTopY = posY + opHeight / 2;
+
+            // Lower wall under window (flat, below the slope's influence)
+            const lowerH = holeBottomY - 0.2;
+            if (lowerH > 0.05) {
+              const lowGeo = new THREE.BoxGeometry(opWidth, lowerH, wallThick);
+              const lowMesh = new THREE.Mesh(lowGeo, wallMaterial);
+              lowMesh.position.set(op.x, 0.2 + lowerH / 2, 0);
+              lowMesh.castShadow = true;
+              wallGroup.add(lowMesh);
+            }
+
+            // Upper lintel above window/door (follows the sloped top)
+            buildPanel(holeLeft, holeRight, holeTopY);
+
+            currentX = holeRight;
+          });
+
+          // Final right wall segment
+          buildPanel(currentX, wallLength / 2, 0.2);
+        }
+
+        roomGroup.add(wallGroup);
+      }
+
+      // Build Exterior Walls
+      buildWallWithOpenings('front', w, 0, d / 2 - wallThick / 2, 0, frontWallH);
+      buildWallWithOpenings('back', w, 0, -d / 2 + wallThick / 2, Math.PI, backWallH);
+      buildWallWithOpenings('left', d, -w / 2 + wallThick / 2, 0, -Math.PI / 2, leftWallHeightAt);
+      buildWallWithOpenings('right', d, w / 2 - wallThick / 2, 0, Math.PI / 2, rightWallHeightAt);
+
+      // Black Corner Posts (height follows the mono-pitch slope at each corner)
+      [
+        [-w/2 + 0.02, d/2 - 0.02, frontWallH],
+        [w/2 - 0.02, d/2 - 0.02, frontWallH],
+        [-w/2 + 0.02, -d/2 + 0.02, backWallH],
+        [w/2 - 0.02, -d/2 + 0.02, backWallH]
+      ].forEach(pos => {
+        const postGeo = new THREE.BoxGeometry(0.08, pos[2], 0.08);
+        const post = new THREE.Mesh(postGeo, frameMaterial);
+        post.position.set(pos[0], pos[2]/2 + 0.2, pos[1]);
+        roomGroup.add(post);
+      });
+
+      // Place Glazing Assemblies
+      config.openings.forEach(op => {
+        const opGroup = new THREE.Group();
+        const doorW = getOpeningWidth(op.type);
+        const doorH = getOpeningHeight(op.type);
+        const frameThick = 0.06;
+
+        // Outer Metallic Box Frame
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(doorW, frameThick, 0.16), frameMaterial);
+        topBar.position.y = doorH / 2 - frameThick / 2;
+
+        const bottomBar = new THREE.Mesh(new THREE.BoxGeometry(doorW, frameThick, 0.16), frameMaterial);
+        bottomBar.position.y = -doorH / 2 + frameThick / 2;
+
+        const leftBar = new THREE.Mesh(new THREE.BoxGeometry(frameThick, doorH, 0.16), frameMaterial);
+        leftBar.position.x = -doorW / 2 + frameThick / 2;
+
+        const rightBar = new THREE.Mesh(new THREE.BoxGeometry(frameThick, doorH, 0.16), frameMaterial);
+        rightBar.position.x = doorW / 2 - frameThick / 2;
+
+        opGroup.add(topBar, bottomBar, leftBar, rightBar);
+
+        // Panel Inner Mullions & Panes
+        if (op.type.startsWith('bifold')) {
+          let numPanels = 2;
+          if (op.type === 'bifold-240' || op.type === 'bifold-wide') numPanels = 3;
+          if (op.type === 'bifold-360') numPanels = 4;
+
+          const panelW = (doorW - frameThick * 2) / numPanels;
+          for (let i = 0; i < numPanels; i++) {
+            const px = -doorW/2 + frameThick + panelW * i + panelW/2;
+            const pane = new THREE.Mesh(new THREE.BoxGeometry(panelW - 0.06, doorH - 0.12, 0.02), glassMaterial);
+            pane.position.set(px, 0, 0);
+
+            const pBorderLeft = new THREE.Mesh(new THREE.BoxGeometry(0.04, doorH - 0.1, 0.06), frameMaterial);
+            pBorderLeft.position.set(px - panelW/2 + 0.02, 0, 0);
+
+            const pBorderRight = new THREE.Mesh(new THREE.BoxGeometry(0.04, doorH - 0.1, 0.06), frameMaterial);
+            pBorderRight.position.set(px + panelW/2 - 0.02, 0, 0);
+
+            opGroup.add(pane, pBorderLeft, pBorderRight);
+          }
+
+          const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.9, roughness: 0.1 });
+          const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.3, 0.06), handleMat);
+          handle.position.set(0.05, -0.1, 0.06);
+          opGroup.add(handle);
+
+        } else if (op.type.startsWith('sliding')) {
+          const panelW = (doorW - frameThick * 2) / 2;
+          // Fixed & Sliding Pane Offset
+          const pane1 = new THREE.Mesh(new THREE.BoxGeometry(panelW, doorH - 0.12, 0.02), glassMaterial);
+          pane1.position.set(-panelW/2 + 0.02, 0, -0.02);
+          const pane2 = new THREE.Mesh(new THREE.BoxGeometry(panelW, doorH - 0.12, 0.02), glassMaterial);
+          pane2.position.set(panelW/2 - 0.02, 0, 0.02);
+
+          const midMullion = new THREE.Mesh(new THREE.BoxGeometry(0.05, doorH - 0.1, 0.08), frameMaterial);
+          midMullion.position.set(0, 0, 0);
+
+          opGroup.add(pane1, pane2, midMullion);
+
+        } else if (op.type.startsWith('french')) {
+          const panelW = (doorW - frameThick * 2) / 2;
+          const glass1 = new THREE.Mesh(new THREE.BoxGeometry(panelW - 0.06, doorH - 0.12, 0.02), glassMaterial);
+          glass1.position.set(-panelW/2, 0, 0);
+          const glass2 = new THREE.Mesh(new THREE.BoxGeometry(panelW - 0.06, doorH - 0.12, 0.02), glassMaterial);
+          glass2.position.set(panelW/2, 0, 0);
+
+          const centerMullion = new THREE.Mesh(new THREE.BoxGeometry(0.04, doorH - 0.1, 0.08), frameMaterial);
+          centerMullion.position.set(0, 0, 0);
+
+          const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.9, roughness: 0.1 });
+          const handle1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.06), handleMat);
+          handle1.position.set(-0.04, -0.05, 0.06);
+          const handle2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.06), handleMat);
+          handle2.position.set(0.04, -0.05, 0.06);
+
+          opGroup.add(glass1, glass2, centerMullion, handle1, handle2);
+
+        } else {
+          // Standard Single Windows / Single Doors
+          const glass = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.1, doorH - 0.1, 0.02), glassMaterial);
+          opGroup.add(glass);
+
+          if (op.type === 'single-door') {
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.9, roughness: 0.1 });
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.06), handleMat);
+            handle.position.set(doorW/2 - 0.12, -0.05, 0.06);
+            opGroup.add(handle);
+          }
+        }
+
+        // Add Cill Threshold step for doors
+        if (!op.type.startsWith('window')) {
+          const stepGeo = new THREE.BoxGeometry(doorW + 0.1, 0.05, 0.22);
+          const stepMesh = new THREE.Mesh(stepGeo, frameMaterial);
+          stepMesh.position.set(0, -doorH/2 - 0.025, 0.05);
+          opGroup.add(stepMesh);
+        }
+
+        // Selection & Drag Hitbox
+        const isSelected = (selectedOpeningId === op.id);
+        const hitBoxGeo = new THREE.BoxGeometry(doorW, doorH + 0.1, 0.35);
+        const hitBoxMat = new THREE.MeshStandardMaterial({
+          color: isSelected ? 0x22c55e : 0x3b82f6,
+          transparent: true,
+          opacity: isSelected ? 0.25 : 0.05,
+          wireframe: true
+        });
+        const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+        hitBox.position.set(0, 0, 0);
+        hitBox.userData = { openingId: op.id, wall: op.wall, isDragHandle: true };
+        opGroup.add(hitBox);
+        draggableObjects.push(hitBox);
+
+        // Position opening on designated wall
+        const posY = getOpeningYPosition(op);
+        if (op.wall === 'front') {
+          opGroup.position.set(op.x, posY, d/2 - wallThick/2);
+        } else if (op.wall === 'back') {
+          opGroup.rotation.y = Math.PI;
+          opGroup.position.set(-op.x, posY, -d/2 + wallThick/2);
+        } else if (op.wall === 'left') {
+          opGroup.rotation.y = -Math.PI / 2;
+          opGroup.position.set(-w/2 + wallThick/2, posY, op.x);
+        } else if (op.wall === 'right') {
+          opGroup.rotation.y = Math.PI / 2;
+          opGroup.position.set(w/2 - wallThick/2, posY, -op.x);
+        }
+
+        roomGroup.add(opGroup);
+      });
+
+      // Side & Vertical Dimension Lines for Openings
+      buildOpeningSideDimensions();
+
+      // Roof Structure
+      const overhang = config.overhang;
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.3 });
+      const D = d + overhang * 1.5;
+      const zCenter = overhang * 0.2;
+
+      if (config.roofType === 'flat') {
+        // Mono-pitch deck: sits flush on the walls, high edge at the front
+        // (garden-facing feature elevation), falling towards the back
+        // (boundary side, keeps eaves within Permitted Development limits).
+        const roofThick = 0.14;
+        const monoD = d + overhang * 2; // symmetric horizontal footprint front+back
+        const frontTipY = frontWallH + 0.2 + overhang * Math.tan(pitchRad);
+        const backTipY = backWallH + 0.2 - overhang * Math.tan(pitchRad);
+        const totalRise = frontTipY - backTipY;
+        const deckLen = Math.sqrt(monoD * monoD + totalRise * totalRise);
+        const centerY = (frontTipY + backTipY) / 2 + (roofThick / 2) * Math.cos(pitchRad);
+
+        const roofGeo = new THREE.BoxGeometry(w + overhang * 2, roofThick, deckLen);
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.set(0, centerY, 0);
+        roof.rotation.x = -pitchRad;
+        roof.castShadow = true;
+        roof.receiveShadow = true;
+        roomGroup.add(roof);
+      } else {
+        // Apex dual-pitch roof: two sloped decks meeting at a central ridge,
+        // ridge running front-to-back, apex pointing UP. Pitch is measured
+        // from the wall top at the centreline out to the ridge.
+        const roofThick = 0.10;
+        const run = w / 2 + overhang;
+        const ridgeY = h + (w / 2) * Math.tan(pitchRad);
+        const eaveTipY = h - overhang * Math.tan(pitchRad);
+        const rise = ridgeY - eaveTipY;
+        const slabLen = Math.sqrt(run * run + rise * rise);
+        const centerY = (ridgeY + eaveTipY) / 2;
+
+        const slabGeo = new THREE.BoxGeometry(slabLen, roofThick, D);
+
+        const slabL = new THREE.Mesh(slabGeo, roofMat);
+        slabL.position.set(-run / 2, centerY, zCenter);
+        slabL.rotation.z = pitchRad;
+        slabL.castShadow = true;
+        slabL.receiveShadow = true;
+        roomGroup.add(slabL);
+
+        const slabR = new THREE.Mesh(slabGeo, roofMat);
+        slabR.position.set(run / 2, centerY, zCenter);
+        slabR.rotation.z = -pitchRad;
+        slabR.castShadow = true;
+        slabR.receiveShadow = true;
+        roomGroup.add(slabR);
+
+        // Ridge cap trim
+        const ridgeCapGeo = new THREE.BoxGeometry(0.16, 0.09, D);
+        const ridgeCap = new THREE.Mesh(ridgeCapGeo, roofMat);
+        ridgeCap.position.set(0, ridgeY + 0.03, zCenter);
+        roomGroup.add(ridgeCap);
+
+        // Gable end infill (clad to match the walls), apex pointing up
+        function buildGableTriangle(zPos, flip) {
+          const shape = new THREE.Shape();
+          shape.moveTo(-w / 2, 0);
+          shape.lineTo(w / 2, 0);
+          shape.lineTo(0, ridgeY - h);
+          shape.lineTo(-w / 2, 0);
+          const geo = new THREE.ShapeGeometry(shape);
+          const mesh = new THREE.Mesh(geo, wallMaterial);
+          mesh.position.set(0, h, zPos);
+          if (flip) mesh.rotation.y = Math.PI;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          roomGroup.add(mesh);
+        }
+        buildGableTriangle(d / 2 - 0.005, false);
+        buildGableTriangle(-d / 2 + 0.005, true);
+      }
+
+      // Front Decking Platform
+      if (config.hasDecking) {
+        const deckW = w + 0.2;
+        const deckD = 1.2;
+        const deckGeo = new THREE.BoxGeometry(deckW, 0.08, deckD);
+        const deckMat = new THREE.MeshStandardMaterial({ map: textures.cedar, roughness: 0.7 });
+        const deck = new THREE.Mesh(deckGeo, deckMat);
+        deck.position.set(0, 0.04, d/2 + deckD/2 + 0.02);
+        deck.receiveShadow = true;
+        roomGroup.add(deck);
+      }
+
+      calculatePrice();
+      updateOverlayUI();
+    }
+
+    function buildInteriorFurniture(w, d, h) {
+      const deskGroup = new THREE.Group();
+      const deskMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.5 });
+      const topGeo = new THREE.BoxGeometry(1.4, 0.04, 0.7);
+      const topMesh = new THREE.Mesh(topGeo, deskMat);
+      topMesh.position.y = 0.74;
+      deskGroup.add(topMesh);
+
+      const legGeo = new THREE.BoxGeometry(0.04, 0.74, 0.04);
+      [[-0.65, -0.3], [0.65, -0.3], [-0.65, 0.3], [0.65, 0.3]].forEach(pos => {
+        const leg = new THREE.Mesh(legGeo, deskMat);
+        leg.position.set(pos[0], 0.37, pos[1]);
+        deskGroup.add(leg);
+      });
+
+      const lapMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.8, roughness: 0.2 });
+      const laptop = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.015, 0.24), lapMat);
+      laptop.position.set(0, 0.76, 0);
+      deskGroup.add(laptop);
+
+      deskGroup.position.set(0, 0.2, -d / 2 + 0.6);
+      roomGroup.add(deskGroup);
+    }
+
+    function buildOpeningSideDimensions() {
+      dimensionAnchors = [];
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 2 });
+      const tickMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+      const tickGeo = new THREE.BoxGeometry(0.04, 0.12, 0.04);
+
+      config.openings.forEach(op => {
+        const wallMax = (op.wall === 'front' || op.wall === 'back') ? config.width : config.depth;
+        const opW = getOpeningWidth(op.type);
+        const opH = getOpeningHeight(op.type);
+        const posY = getOpeningYPosition(op);
+
+        const leftDist = (wallMax / 2) + op.x - (opW / 2);
+        const rightDist = (wallMax / 2) - op.x - (opW / 2);
+
+        const dimY = posY + (opH / 2) + 0.15;
+        const offsetDist = (op.wall === 'front' || op.wall === 'right') ? 0.12 : -0.12;
+
+        let startPoint = new THREE.Vector3();
+        let leftEdgePoint = new THREE.Vector3();
+        let rightEdgePoint = new THREE.Vector3();
+        let endPoint = new THREE.Vector3();
+
+        if (op.wall === 'front') {
+          const z = config.depth / 2 + offsetDist;
+          startPoint.set(-wallMax / 2, dimY, z);
+          leftEdgePoint.set(op.x - opW / 2, dimY, z);
+          rightEdgePoint.set(op.x + opW / 2, dimY, z);
+          endPoint.set(wallMax / 2, dimY, z);
+        } else if (op.wall === 'back') {
+          const z = -config.depth / 2 - offsetDist;
+          startPoint.set(wallMax / 2, dimY, z);
+          leftEdgePoint.set(-op.x + opW / 2, dimY, z);
+          rightEdgePoint.set(-op.x - opW / 2, dimY, z);
+          endPoint.set(-wallMax / 2, dimY, z);
+        } else if (op.wall === 'left') {
+          const x = -config.width / 2 - offsetDist;
+          startPoint.set(x, dimY, -wallMax / 2);
+          leftEdgePoint.set(x, dimY, op.x - opW / 2);
+          rightEdgePoint.set(x, dimY, op.x + opW / 2);
+          endPoint.set(x, dimY, wallMax / 2);
+        } else if (op.wall === 'right') {
+          const x = config.width / 2 + offsetDist;
+          startPoint.set(x, dimY, wallMax / 2);
+          leftEdgePoint.set(x, dimY, -op.x - opW / 2);
+          rightEdgePoint.set(x, dimY, -op.x + opW / 2);
+          endPoint.set(x, dimY, -wallMax / 2);
+        }
+
+        const lineLeftGeo = new THREE.BufferGeometry().setFromPoints([startPoint, leftEdgePoint]);
+        const lineRightGeo = new THREE.BufferGeometry().setFromPoints([rightEdgePoint, endPoint]);
+        roomGroup.add(new THREE.Line(lineLeftGeo, lineMat));
+        roomGroup.add(new THREE.Line(lineRightGeo, lineMat));
+
+        [startPoint, leftEdgePoint, rightEdgePoint, endPoint].forEach(pt => {
+          const tick = new THREE.Mesh(tickGeo, tickMat);
+          tick.position.copy(pt);
+          roomGroup.add(tick);
+        });
+
+        const leftMid = new THREE.Vector3().addVectors(startPoint, leftEdgePoint).multiplyScalar(0.5);
+        const rightMid = new THREE.Vector3().addVectors(rightEdgePoint, endPoint).multiplyScalar(0.5);
+        const centerMid = new THREE.Vector3().addVectors(leftEdgePoint, rightEdgePoint).multiplyScalar(0.5);
+
+        dimensionAnchors.push(
+          { opId: op.id, side: 'left', dist: leftDist, pos3D: leftMid, wallMax, opW },
+          { opId: op.id, side: 'width', dist: opW, pos3D: centerMid, wallMax, opW },
+          { opId: op.id, side: 'right', dist: rightDist, pos3D: rightMid, wallMax, opW }
+        );
+
+        // Vertical Cill Height Dimension Line for Windows
+        if (op.type.startsWith('window')) {
+          const cillH = (posY - opH / 2) - 0.20;
+          let vStart = new THREE.Vector3();
+          let vEnd = new THREE.Vector3();
+
+          if (op.wall === 'front') {
+            const z = config.depth / 2 + offsetDist;
+            vStart.set(op.x, 0.20, z);
+            vEnd.set(op.x, posY - opH / 2, z);
+          } else if (op.wall === 'back') {
+            const z = -config.depth / 2 - offsetDist;
+            vStart.set(-op.x, 0.20, z);
+            vEnd.set(-op.x, posY - opH / 2, z);
+          } else if (op.wall === 'left') {
+            const x = -config.width / 2 - offsetDist;
+            vStart.set(x, 0.20, op.x);
+            vEnd.set(x, posY - opH / 2, op.x);
+          } else if (op.wall === 'right') {
+            const x = config.width / 2 + offsetDist;
+            vStart.set(x, 0.20, -op.x);
+            vEnd.set(x, posY - opH / 2, -op.x);
+          }
+
+          const vLineGeo = new THREE.BufferGeometry().setFromPoints([vStart, vEnd]);
+          roomGroup.add(new THREE.Line(vLineGeo, lineMat));
+
+          const cillMid = new THREE.Vector3().addVectors(vStart, vEnd).multiplyScalar(0.5);
+          dimensionAnchors.push(
+            { opId: op.id, side: 'cill', dist: cillH, pos3D: cillMid, wallMax, opW }
+          );
+        }
+      });
+    }
+
+    function toScreenPos(pos3D) {
+      const v = pos3D.clone();
+      v.project(camera);
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || window.innerHeight;
+      return {
+        x: (v.x * 0.5 + 0.5) * width,
+        y: (-v.y * 0.5 + 0.5) * height,
+        inView: (v.z < 1)
+      };
+    }
+
+    let overlayStateKey = '';
+
+    function rebuildOverlayDOM() {
+      const overlay = document.getElementById('opening-overlay-container');
+      if (!overlay || isEditingDimension) return;
+
+      const currentStateKey = `${selectedOpeningId}_${isMoveModeActive}_${config.openings.map(o => o.id + o.x.toFixed(2) + (o.y ? o.y.toFixed(2) : '') + o.wall + o.type).join(',')}`;
+      if (overlayStateKey === currentStateKey) return;
+      overlayStateKey = currentStateKey;
+
+      overlay.innerHTML = '';
+
+      if (selectedOpeningId) {
+        const op = config.openings.find(o => o.id === selectedOpeningId);
+        if (op) {
+          const popupEl = document.createElement('div');
+          popupEl.id = 'selected-opening-popup-el';
+          popupEl.className = 'absolute transform -translate-x-1/2 -translate-y-full bg-zinc-900/95 border border-emerald-500/50 backdrop-blur-md rounded-2xl p-2.5 shadow-2xl pointer-events-auto flex items-center gap-2 z-30 transition-none';
+          
+          const opTitle = getOpeningTitle(op.type).toUpperCase();
+
+          if (isMoveModeActive) {
+            popupEl.innerHTML = `
+              <div class="flex items-center gap-2">
+                <div class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold animate-pulse flex items-center gap-1.5 border border-amber-500/40">
+                  <i class="fa-solid fa-up-down-left-right"></i>
+                  <span>${op.type.startsWith('window') ? 'Drag window ↔ ↕ in 3D...' : 'Drag door ↔ in 3D...'}</span>
+                </div>
+                <button onclick="disableMoveMode()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl transition shadow cursor-pointer">
+                  <i class="fa-solid fa-check mr-1"></i> Done
+                </button>
+              </div>
+            `;
+          } else {
+            popupEl.innerHTML = `
+              <div class="text-[11px] font-bold text-emerald-400 uppercase px-2 tracking-wider border-r border-zinc-700 pr-3 hidden sm:block">
+                ${opTitle}
+              </div>
+              <button onclick="enableMoveMode()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow cursor-pointer">
+                <i class="fa-solid fa-up-down-left-right"></i>
+                <span>Move / Drag</span>
+              </button>
+              <button onclick="removeOpening('${op.id}')" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-rose-500/20 text-rose-400 border border-zinc-700 hover:border-rose-500/40 font-semibold text-xs rounded-xl transition cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+              <button onclick="deselectOpening()" class="px-2 py-1.5 text-zinc-400 hover:text-zinc-200 text-xs cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            `;
+          }
+          overlay.appendChild(popupEl);
+        }
+      }
+
+      dimensionAnchors.forEach((anchor, idx) => {
+        if (selectedOpeningId && anchor.opId !== selectedOpeningId) return;
+
+        const badge = document.createElement('div');
+        badge.id = `dim-badge-${idx}`;
+        badge.className = 'absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-20';
+
+        if (anchor.side === 'width') {
+          badge.innerHTML = `
+            <span class="px-2 py-0.5 bg-zinc-900/90 border border-zinc-700 text-zinc-300 text-[11px] font-medium rounded-md shadow-sm">
+              <i class="fa-solid fa-arrows-left-right text-[9px] mr-1 text-emerald-400"></i>${anchor.dist.toFixed(2)}m
+            </span>
+          `;
+        } else if (anchor.side === 'cill') {
+          badge.innerHTML = `
+            <div class="group relative flex items-center">
+              <button onclick="makeDimensionEditable(this, '${anchor.opId}', '${anchor.side}', ${anchor.wallMax}, ${anchor.opW})" 
+                class="px-2 py-0.5 bg-amber-950/90 border border-amber-500/60 text-amber-300 hover:bg-amber-500 hover:text-zinc-950 text-xs font-bold rounded-lg shadow-lg transition flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-arrows-up-down text-[9px] opacity-80"></i>
+                <span>Cill: ${anchor.dist.toFixed(2)}m</span>
+                <i class="fa-solid fa-pen text-[9px] opacity-70 group-hover:opacity-100"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          badge.innerHTML = `
+            <div class="group relative flex items-center">
+              <button onclick="makeDimensionEditable(this, '${anchor.opId}', '${anchor.side}', ${anchor.wallMax}, ${anchor.opW})" 
+                class="px-2 py-0.5 bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950 text-xs font-bold rounded-lg shadow-lg transition flex items-center gap-1 cursor-pointer">
+                <span>${anchor.dist.toFixed(2)}m</span>
+                <i class="fa-solid fa-pen text-[9px] opacity-70 group-hover:opacity-100"></i>
+              </button>
+            </div>
+          `;
+        }
+
+        overlay.appendChild(badge);
+      });
+    }
+
+    function updateOverlayUI() {
+      rebuildOverlayDOM();
+
+      if (isEditingDimension) return;
+
+      if (selectedOpeningId) {
+        const popupEl = document.getElementById('selected-opening-popup-el');
+        const op = config.openings.find(o => o.id === selectedOpeningId);
+        if (popupEl && op) {
+          const posY = getOpeningYPosition(op);
+
+          let popup3D = new THREE.Vector3();
+          if (op.wall === 'front') popup3D.set(op.x, posY + getOpeningHeight(op.type)/2 + 0.25, config.depth / 2);
+          else if (op.wall === 'back') popup3D.set(-op.x, posY + getOpeningHeight(op.type)/2 + 0.25, -config.depth / 2);
+          else if (op.wall === 'left') popup3D.set(-config.width / 2, posY + getOpeningHeight(op.type)/2 + 0.25, op.x);
+          else if (op.wall === 'right') popup3D.set(config.width / 2, posY + getOpeningHeight(op.type)/2 + 0.25, -op.x);
+
+          const screen = toScreenPos(popup3D);
+          if (screen.inView) {
+            popupEl.style.display = 'flex';
+            popupEl.style.left = `${screen.x}px`;
+            popupEl.style.top = `${screen.y - 10}px`;
+          } else {
+            popupEl.style.display = 'none';
+          }
+        }
+      }
+
+      dimensionAnchors.forEach((anchor, idx) => {
+        if (selectedOpeningId && anchor.opId !== selectedOpeningId) return;
+        const badge = document.getElementById(`dim-badge-${idx}`);
+        if (badge) {
+          const screen = toScreenPos(anchor.pos3D);
+          if (screen.inView) {
+            badge.style.display = 'block';
+            badge.style.left = `${screen.x}px`;
+            badge.style.top = `${screen.y}px`;
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    function makeDimensionEditable(btnEl, opId, side, wallMax, opW) {
+      isEditingDimension = true;
+      const op = config.openings.find(o => o.id === opId);
+      if (!op) return;
+
+      let currentDist = 0;
+      if (side === 'left') {
+        currentDist = (wallMax / 2) + op.x - (opW / 2);
+      } else if (side === 'right') {
+        currentDist = (wallMax / 2) - op.x - (opW / 2);
+      } else if (side === 'cill') {
+        const posY = getOpeningYPosition(op);
+        currentDist = (posY - getOpeningHeight(op.type) / 2) - 0.20;
+      }
+
+      const parent = btnEl.parentElement;
+      parent.innerHTML = `
+        <div class="flex items-center bg-zinc-900 border-2 border-emerald-500 rounded-lg shadow-xl p-0.5">
+          <input type="number" step="0.05" min="0.1" max="3.0" value="${currentDist.toFixed(2)}"
+            id="dim-input-active"
+            class="w-16 bg-zinc-800 text-white font-bold text-xs p-1 rounded outline-none text-center"
+            onkeydown="if(event.key==='Enter') applyDimensionChange('${opId}', '${side}', this.value, ${wallMax}, ${opW})"
+            onblur="applyDimensionChange('${opId}', '${side}', this.value, ${wallMax}, ${opW})">
+          <span class="text-[10px] text-zinc-400 px-1">m</span>
+        </div>
+      `;
+
+      const input = document.getElementById('dim-input-active');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function applyDimensionChange(opId, side, newDistVal, wallMax, opW) {
+      isEditingDimension = false;
+      overlayStateKey = '';
+      const dist = parseFloat(newDistVal);
+      if (isNaN(dist)) {
+        build3DRoom();
+        return;
+      }
+
+      const op = config.openings.find(o => o.id === opId);
+      if (op) {
+        const minX = -(wallMax / 2) + (opW / 2) + 0.1;
+        const maxX = (wallMax / 2) - (opW / 2) - 0.1;
+
+        if (side === 'left') {
+          const targetX = dist + (opW / 2) - (wallMax / 2);
+          op.x = Math.max(minX, Math.min(maxX, targetX));
+        } else if (side === 'right') {
+          const targetX = (wallMax / 2) - dist - (opW / 2);
+          op.x = Math.max(minX, Math.min(maxX, targetX));
+        } else if (side === 'cill') {
+          const opH = getOpeningHeight(op.type);
+          const targetPosY = 0.20 + dist + (opH / 2);
+          const minY = 0.20 + (opH / 2) + 0.05;
+          const maxY = (config.height + 0.20) - (opH / 2) - 0.05;
+          op.y = Math.max(minY, Math.min(maxY, targetPosY));
+        }
+
+        renderPlacedOpeningsList();
+        build3DRoom();
+      }
+    }
+
+    function enableMoveMode() {
+      isMoveModeActive = true;
+      canvas.style.cursor = 'grab';
+      overlayStateKey = '';
+      updateOverlayUI();
+    }
+
+    function disableMoveMode() {
+      isMoveModeActive = false;
+      canvas.style.cursor = 'default';
+      overlayStateKey = '';
+      updateOverlayUI();
+    }
+
+    function deselectOpening() {
+      selectedOpeningId = null;
+      isMoveModeActive = false;
+      overlayStateKey = '';
+      build3DRoom();
+    }
+
+    function setTargetWall(wall) {
+      config.targetWall = wall;
+      document.querySelectorAll('.wall-select-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('text-zinc-400');
+      });
+      const activeBtn = document.getElementById(`wall-btn-${wall}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.classList.remove('text-zinc-400');
+      }
+
+      // Rotate camera to face selected target wall
+      const w = config.width;
+      const d = config.depth;
+      if (wall === 'front') {
+        camera.position.set(0, 1.8, d * 2.2);
+        controls.target.set(0, 1.3, 0);
+      } else if (wall === 'back') {
+        camera.position.set(0, 1.8, -d * 2.2);
+        controls.target.set(0, 1.3, 0);
+      } else if (wall === 'left') {
+        camera.position.set(-w * 2.2, 1.8, 0);
+        controls.target.set(0, 1.3, 0);
+      } else if (wall === 'right') {
+        camera.position.set(w * 2.2, 1.8, 0);
+        controls.target.set(0, 1.3, 0);
+      }
+      controls.update();
+    }
+
+    function changeOpeningWall(opId, newWall) {
+      const op = config.openings.find(o => o.id === opId);
+      if (op) {
+        op.wall = newWall;
+        op.x = 0; // Center on new wall
+        overlayStateKey = '';
+        renderPlacedOpeningsList();
+        build3DRoom();
+      }
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['dimensions', 'materials', 'openings', 'decking'];
+      tabs.forEach(t => {
+        const tabBtn = document.getElementById(`tab-${t}`);
+        const tabContent = document.getElementById(`content-${t}`);
+        if (t === tabName) {
+          if (tabBtn) {
+            tabBtn.classList.add('text-emerald-400', 'border-b-2', 'border-emerald-500', 'bg-zinc-800/40');
+            tabBtn.classList.remove('hover:text-zinc-200');
+          }
+          if (tabContent) tabContent.classList.remove('hidden');
+        } else {
+          if (tabBtn) {
+            tabBtn.classList.remove('text-emerald-400', 'border-b-2', 'border-emerald-500', 'bg-zinc-800/40');
+            tabBtn.classList.add('hover:text-zinc-200');
+          }
+          if (tabContent) tabContent.classList.add('hidden');
+        }
+      });
+    }
+
+    function filterGlazingCategory(cat) {
+      document.querySelectorAll('.glazing-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('text-zinc-400');
+      });
+      const activeBtn = document.getElementById(`glazing-cat-${cat}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.classList.remove('text-zinc-400');
+      }
+
+      document.querySelectorAll('.glazing-option-card').forEach(card => {
+        if (card.getAttribute('data-cat') === cat) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    function setRoofType(type) {
+      config.roofType = type;
+      document.querySelectorAll('.roof-btn').forEach(btn => {
+        btn.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        btn.classList.add('border-zinc-800', 'bg-zinc-800/40');
+      });
+      const activeBtn = document.getElementById(`roof-${type}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-zinc-800', 'bg-zinc-800/40');
+        activeBtn.classList.add('border-emerald-500', 'bg-emerald-500/10');
+      }
+      updatePitchControl(type);
+      build3DRoom();
+    }
+
+    function updatePitchControl(type) {
+      const pitchInput = document.getElementById('input-pitch');
+      const pitchLabel = document.getElementById('label-pitch');
+      if (type === 'flat') {
+        pitchInput.min = 0;
+        pitchInput.max = 15;
+        config.roofPitch = 3;
+        pitchLabel.innerText = 'Roof Pitch / Fall';
+      } else {
+        pitchInput.min = 15;
+        pitchInput.max = 45;
+        config.roofPitch = 30;
+        pitchLabel.innerText = 'Roof Pitch Angle';
+      }
+      pitchInput.value = config.roofPitch;
+      document.getElementById('val-pitch').innerText = config.roofPitch + '\u00b0';
+    }
+
+    function setCladding(type) {
+      config.cladding = type;
+      document.querySelectorAll('.clad-btn').forEach(btn => {
+        btn.classList.remove('border-emerald-500', 'bg-emerald-500/10', 'active');
+        btn.classList.add('border-zinc-800', 'bg-zinc-800/40');
+      });
+      const activeBtn = document.getElementById(`clad-${type}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-zinc-800', 'bg-zinc-800/40');
+        activeBtn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'active');
+      }
+      build3DRoom();
+    }
+
+    function setFrameColor(color) {
+      config.frameColor = color;
+      build3DRoom();
+    }
+
+    function addOpening(type) {
+      const newId = Date.now().toString();
+      const defaultY = getOpeningYPosition({ type: type });
+      config.openings.push({ 
+        id: newId, 
+        type: type, 
+        wall: config.targetWall || 'front', 
+        x: 0, 
+        y: defaultY 
+      });
+      selectedOpeningId = newId;
+      overlayStateKey = '';
+      renderPlacedOpeningsList();
+      build3DRoom();
+    }
+
+    function removeOpening(id) {
+      config.openings = config.openings.filter(o => o.id !== id);
+      if (selectedOpeningId === id) selectedOpeningId = null;
+      overlayStateKey = '';
+      renderPlacedOpeningsList();
+      build3DRoom();
+    }
+
+    function renderPlacedOpeningsList() {
+      const container = document.getElementById('placed-openings-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (config.openings.length === 0) {
+        container.innerHTML = `<div class="text-xs text-zinc-500 italic">No openings added yet.</div>`;
+        return;
+      }
+
+      config.openings.forEach((op, index) => {
+        const item = document.createElement('div');
+        item.className = `p-3 rounded-xl border ${selectedOpeningId === op.id ? 'border-emerald-500 bg-emerald-500/10' : 'border-zinc-800 bg-zinc-800/40'} flex flex-col gap-2 transition`;
+        
+        const posY = getOpeningYPosition(op);
+        const cillH = (posY - getOpeningHeight(op.type)/2) - 0.20;
+        const detailStr = op.type.startsWith('window') 
+          ? `Offset: ${op.x.toFixed(2)}m | Cill: ${cillH.toFixed(2)}m`
+          : `Offset: ${op.x.toFixed(2)}m`;
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-emerald-400">#${index + 1}</span>
+              <div>
+                <div class="text-xs font-semibold text-zinc-200 capitalize">${getOpeningTitle(op.type)}</div>
+                <div class="text-[10px] text-zinc-400 capitalize">${detailStr}</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <button onclick="selectedOpeningId='${op.id}'; build3DRoom();" class="p-1.5 text-xs text-emerald-400 hover:bg-emerald-500/20 rounded-lg cursor-pointer" title="Focus 3D View">
+                <i class="fa-solid fa-location-crosshairs"></i>
+              </button>
+              <button onclick="removeOpening('${op.id}')" class="p-1.5 text-xs text-rose-400 hover:bg-rose-500/20 rounded-lg cursor-pointer" title="Remove">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between pt-1.5 border-t border-zinc-800/80 text-xs">
+            <span class="text-[11px] text-zinc-400 font-medium">Positioned Wall:</span>
+            <select onchange="changeOpeningWall('${op.id}', this.value)" class="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-emerald-500">
+              <option value="front" ${op.wall === 'front' ? 'selected' : ''}>Front Wall</option>
+              <option value="left" ${op.wall === 'left' ? 'selected' : ''}>Left Side Wall</option>
+              <option value="right" ${op.wall === 'right' ? 'selected' : ''}>Right Side Wall</option>
+              <option value="back" ${op.wall === 'back' ? 'selected' : ''}>Back Wall</option>
+            </select>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function calculatePrice() {
+      const area = config.width * config.depth;
+      let basePrice = area * 750;
+
+      if (config.cladding === 'oak') basePrice += area * 12;
+      else if (config.cladding === 'composite') basePrice += area * 35;
+      else if (config.cladding === 'render') basePrice += area * 25;
+
+      config.openings.forEach(op => {
+        switch(op.type) {
+          case 'bifold-180': basePrice += 1850; break;
+          case 'bifold-240': basePrice += 2100; break;
+          case 'bifold-wide': basePrice += 2450; break;
+          case 'bifold-360': basePrice += 3100; break;
+          case 'sliding-180': basePrice += 1550; break;
+          case 'sliding-210': basePrice += 1750; break;
+          case 'sliding-240': basePrice += 1950; break;
+          case 'french-150': basePrice += 1280; break;
+          case 'french-180': basePrice += 1420; break;
+          case 'single-door': basePrice += 780; break;
+          case 'window-high-120': basePrice += 480; break;
+          case 'window-high-180': basePrice += 580; break;
+          case 'window-casement-60': basePrice += 390; break;
+          case 'window-casement-120': basePrice += 510; break;
+          case 'window-tall-60': basePrice += 490; break;
+          case 'window-tall-80': basePrice += 590; break;
+          default: basePrice += 500;
+        }
+      });
+
+      if (config.hasDecking) basePrice += config.width * 1.2 * 120;
+      if (config.hasHeating) basePrice += area * 45;
+
+      const totalEl = document.getElementById('price-total');
+      const sqmEl = document.getElementById('price-sqm');
+      const areaBadge = document.getElementById('badge-area');
+      const fpBadge = document.getElementById('badge-footprint');
+      const modalSize = document.getElementById('modal-size');
+      const modalClad = document.getElementById('modal-clad');
+      const modalPrice = document.getElementById('modal-price');
+
+      const formattedTotal = '£' + Math.round(basePrice).toLocaleString();
+      const formattedSqm = '£' + Math.round(basePrice / area).toLocaleString() + ' / m²';
+
+      if (totalEl) totalEl.innerText = formattedTotal;
+      if (sqmEl) sqmEl.innerText = formattedSqm;
+      if (areaBadge) areaBadge.innerText = area.toFixed(2) + ' m²';
+      if (fpBadge) fpBadge.innerText = `${config.width.toFixed(2)}m × ${config.depth.toFixed(2)}m`;
+      if (modalSize) modalSize.innerText = `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`;
+      if (modalClad) modalClad.innerText = config.cladding.toUpperCase();
+      if (modalPrice) modalPrice.innerText = formattedTotal;
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const p = getPointerPos(e);
+      mouse.x = p.x;
+      mouse.y = p.y;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(draggableObjects, true);
+
+      if (intersects.length > 0) {
+        const hitObj = intersects[0].object;
+        if (hitObj.userData && hitObj.userData.openingId) {
+          const clickedId = hitObj.userData.openingId;
+
+          if (selectedOpeningId !== clickedId) {
+            selectedOpeningId = clickedId;
+            isMoveModeActive = false;
+            build3DRoom();
+            return;
+          }
+
+          if (isMoveModeActive) {
+            isDraggingOpening = true;
+            draggedOpeningId = clickedId;
+            controls.enabled = false;
+
+            const op = config.openings.find(o => o.id === draggedOpeningId);
+            if (op) {
+              if (op.wall === 'front') {
+                dragWallPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, config.depth / 2));
+              } else if (op.wall === 'back') {
+                dragWallPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, -config.depth / 2));
+              } else if (op.wall === 'left') {
+                dragWallPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(-config.width / 2, 0, 0));
+              } else if (op.wall === 'right') {
+                dragWallPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(1, 0, 0), new THREE.Vector3(config.width / 2, 0, 0));
+              }
+            }
+            canvas.style.cursor = 'grabbing';
+          }
+        }
+      } else {
+        if (!isEditingDimension && selectedOpeningId) {
+          deselectOpening();
+        }
+      }
     });
-  });
-}
 
-document.getElementById('roofWinMinus').addEventListener('click', ()=>{
-  state.roofWin = Math.max(0, state.roofWin-1);
-  document.getElementById('cntRoofWin').textContent = state.roofWin;
-  document.getElementById('valRoofWin').textContent = state.roofWin;
-  refreshAll();
-});
-document.getElementById('roofWinPlus').addEventListener('click', ()=>{
-  state.roofWin = Math.min(4, state.roofWin+1);
-  document.getElementById('cntRoofWin').textContent = state.roofWin;
-  document.getElementById('valRoofWin').textContent = state.roofWin;
-  refreshAll();
-});
+    canvas.addEventListener('pointermove', (e) => {
+      const p = getPointerPos(e);
+      mouse.x = p.x;
+      mouse.y = p.y;
 
-/* ============ SIZE / OPTION CONTROLS ============ */
-function selectOptCard(container, defaultVal, onSelect){
-  const cards = container.querySelectorAll('.opt-card');
-  cards.forEach(c=>{
-    if(c.dataset.v === String(defaultVal)) c.classList.add('selected');
-    c.addEventListener('click', ()=>{
-      cards.forEach(x=>x.classList.remove('selected'));
-      c.classList.add('selected');
-      onSelect(c.dataset.v);
-      refreshAll();
+      if (isDraggingOpening && draggedOpeningId && isMoveModeActive) {
+        raycaster.setFromCamera(mouse, camera);
+        if (raycaster.ray.intersectPlane(dragWallPlane, dragPlaneIntersect)) {
+          const op = config.openings.find(o => o.id === draggedOpeningId);
+          if (op) {
+            const wallMax = (op.wall === 'front' || op.wall === 'back') ? config.width : config.depth;
+            const opW = getOpeningWidth(op.type);
+            const opH = getOpeningHeight(op.type);
+
+            const minX = - (wallMax / 2) + (opW / 2) + 0.1;
+            const maxX = (wallMax / 2) - (opW / 2) - 0.1;
+
+            let rawX = 0;
+            if (op.wall === 'front') rawX = dragPlaneIntersect.x;
+            else if (op.wall === 'back') rawX = -dragPlaneIntersect.x;
+            else if (op.wall === 'left') rawX = dragPlaneIntersect.z;
+            else if (op.wall === 'right') rawX = -dragPlaneIntersect.z;
+
+            op.x = Math.max(minX, Math.min(maxX, rawX));
+
+            // Vertical movement support for windows
+            if (op.type.startsWith('window')) {
+              const minY = 0.20 + (opH / 2) + 0.05; // 5cm floor clearance
+              const maxY = (config.height + 0.20) - (opH / 2) - 0.05; // 5cm ceiling clearance
+              op.y = Math.max(minY, Math.min(maxY, dragPlaneIntersect.y));
+            }
+
+            build3DRoom();
+            renderPlacedOpeningsList();
+          }
+        }
+      } else {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(draggableObjects, true);
+        if (intersects.length > 0) {
+          canvas.style.cursor = isMoveModeActive ? 'grab' : 'pointer';
+        } else {
+          canvas.style.cursor = 'default';
+        }
+      }
+      
+      updateOverlayUI();
     });
-  });
-}
-document.getElementById('rngWidth').addEventListener('input', e=>{
-  state.width = parseFloat(e.target.value);
-  document.getElementById('valWidth').textContent = state.width.toFixed(1) + ' m';
-  refreshAll();
-});
-document.getElementById('rngLength').addEventListener('input', e=>{
-  state.length = parseFloat(e.target.value);
-  document.getElementById('valLength').textContent = state.length.toFixed(1) + ' m';
-  refreshAll();
-});
-selectOptCard(document.getElementById('optHeight'), state.eaves, v=> state.eaves = parseFloat(v));
-selectOptCard(document.getElementById('optRoof'), state.roof, v=> state.roof = v);
-selectOptCard(document.getElementById('optClad'), state.cladding, v=> state.cladding = v);
-selectOptCard(document.getElementById('optColour'), state.colour, v=> state.colour = v);
-selectOptCard(document.getElementById('optInsul'), state.insulation, v=> state.insulation = v);
-selectOptCard(document.getElementById('optFitout'), state.fitout, v=> state.fitout = v);
 
-/* ============ STEP NAVIGATION ============ */
-function renderStepsBar(){
-  const bar = document.getElementById('stepsBar');
-  bar.innerHTML = '';
-  for(let i=1;i<=totalSteps;i++){
-    const pill = document.createElement('div');
-    pill.className = 'step-pill' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
-    bar.appendChild(pill);
-  }
-}
-function showStep(n){
-  currentStep = n;
-  document.querySelectorAll('.step-panel').forEach(p=>{
-    p.style.display = (parseInt(p.dataset.step) === n) ? 'flex' : 'none';
-  });
-  renderStepsBar();
-  document.getElementById('prevBtn').disabled = (n === 1);
-  document.getElementById('nextBtn').textContent = (n === totalSteps-1) ? 'Review My Design →' : 'Continue →';
-  document.getElementById('navButtons').style.display = (n === totalSteps) ? 'none' : 'flex';
-  document.getElementById('viewerHint').textContent = (n === 2) ? '🖱 Click a wall to place · Drag to rotate' : '🖱 Drag to rotate · Scroll to zoom';
-  if(n === totalSteps) buildSummary();
-}
-document.getElementById('nextBtn').addEventListener('click', ()=>{ if(currentStep < totalSteps) showStep(currentStep+1); });
-document.getElementById('prevBtn').addEventListener('click', ()=>{ if(currentStep > 1) showStep(currentStep-1); });
-document.getElementById('backFrom5').addEventListener('click', ()=> showStep(totalSteps-1));
+    const stopDragging = () => {
+      if (isDraggingOpening) {
+        isDraggingOpening = false;
+        draggedOpeningId = null;
+        controls.enabled = true;
+        canvas.style.cursor = 'default';
+        build3DRoom();
+      }
+    };
 
-function buildSummary(){
-  const { floorArea, total } = computeAreaAndPrice();
-  const claddingLabels = { larch:'Siberian Larch T&G', cedar:'Western Red Cedar T&G', composite:'Composite Board' };
-  const insulLabels = { standard:'Standard (Building Regs)', premium:'Premium', passive:'Passive' };
-  const openingCounts = {};
-  state.openings.forEach(o=>{ openingCounts[o.type] = (openingCounts[o.type]||0)+1; });
-  const openingSummary = Object.keys(openingCounts).map(k=> `${openingCounts[k]} ${OPENING_SPECS[k].label.toLowerCase()}${openingCounts[k]>1?'s':''}`).join(', ') || 'none placed';
-  const items = [
-    ['Footprint', state.width.toFixed(1)+'m × '+state.length.toFixed(1)+'m'],
-    ['Ceiling height', state.eaves+'m eaves'],
-    ['Roof', state.roof === 'pitched' ? 'Pitched Gable' : 'Flat / EPDM'],
-    ['Cladding', claddingLabels[state.cladding]],
-    ['Colour', state.colour],
-    ['Insulation', insulLabels[state.insulation]],
-    ['Fit-out', state.fitout === 'full' ? 'Full Fit-Out' : 'Shell Only'],
-    ['Windows / Doors', openingSummary + (state.roofWin ? `, ${state.roofWin} rooflight${state.roofWin>1?'s':''}` : '')],
-    ['Floor Area', floorArea.toFixed(1)+' m²'],
-    ['Estimated Price', fmtGBP(total)+' +VAT'],
-  ];
-  document.getElementById('summaryGrid').innerHTML = items.map(([k,v])=>`<div class="summary-item"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
-}
+    canvas.addEventListener('pointerup', stopDragging);
+    canvas.addEventListener('pointerleave', stopDragging);
 
-document.getElementById('leadForm').addEventListener('submit', function(e){
-  e.preventDefault();
-  const { total } = computeAreaAndPrice();
-  document.querySelector('.config-left').innerHTML = `
-    <div class="success">
-      <div class="check">✓</div>
-      <h3 style="font-family:'Archivo Black';text-transform:none;font-size:22px;margin-bottom:10px;">Design sent to our modular team</h3>
-      <p style="color:#5b5f56;font-size:14px;max-width:340px;margin:0 auto;">Thanks — we've received your garden room spec (est. ${fmtGBP(total)} +VAT) along with your measurements and every window and door placement. A member of the Haldane Fisher modular team will contact you within 2 working days to arrange a site survey.</p>
-    </div>`;
-});
+    function toggleDecking() {
+      config.hasDecking = document.getElementById('check-decking').checked;
+      build3DRoom();
+    }
 
-/* init */
-showStep(1);
-refreshAll();
-renderLoop();
-</script>
+    function toggleFurniture() {
+      config.showFurniture = document.getElementById('check-interior-furniture').checked;
+      build3DRoom();
+    }
 
+    function toggleDimensionsOverlay() {
+      config.showDimensions = document.getElementById('check-dimensions').checked;
+      build3DRoom();
+    }
+
+    function setCameraView(view) {
+      const w = config.width;
+      const d = config.depth;
+
+      if (view === '3d') {
+        camera.position.set(w * 1.8, 4.2, d * 2.1);
+        controls.target.set(0, 1.2, 0);
+      } else if (view === 'top') {
+        camera.position.set(0, Math.max(w, d) * 2.2, 0.01);
+        controls.target.set(0, 0, 0);
+      } else if (view === 'front') {
+        camera.position.set(0, 1.5, d * 2.2);
+        controls.target.set(0, 1.5, 0);
+      } else if (view === 'interior') {
+        camera.position.set(0, 1.3, d/2 - 0.4);
+        controls.target.set(0, 1.3, -d/2);
+      }
+      controls.update();
+    }
+
+    function resetConfiguration() {
+      config.width = 4.5;
+      config.depth = 3.5;
+      config.height = 2.74;
+      config.overhang = 0.40;
+      config.roofType = 'flat';
+      config.roofPitch = 3;
+      config.cladding = 'cedar';
+      config.targetWall = 'front';
+      config.openings = [
+        { id: '1', type: 'bifold-240', wall: 'front', x: 0 },
+        { id: '2', type: 'window-high-120', wall: 'right', x: 0.8, y: 1.95 }
+      ];
+      
+      document.getElementById('input-width').value = 4.5;
+      document.getElementById('input-depth').value = 3.5;
+      document.getElementById('input-height').value = 2.74;
+      document.getElementById('val-width').innerText = '4.50 m';
+      document.getElementById('val-depth').innerText = '3.50 m';
+      document.getElementById('val-height').innerText = '2.74 m';
+
+      document.querySelectorAll('.roof-btn').forEach(btn => {
+        btn.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        btn.classList.add('border-zinc-800', 'bg-zinc-800/40');
+      });
+      const activeRoofBtn = document.getElementById('roof-flat');
+      if (activeRoofBtn) {
+        activeRoofBtn.classList.remove('border-zinc-800', 'bg-zinc-800/40');
+        activeRoofBtn.classList.add('border-emerald-500', 'bg-emerald-500/10');
+      }
+      updatePitchControl('flat');
+
+      setTargetWall('front');
+      renderPlacedOpeningsList();
+      build3DRoom();
+    }
+
+    // ============================================================
+    // Structural cutting list & production pack (internal use only —
+    // never downloaded by the client; generated at submit time and
+    // emailed to the business).
+    // ============================================================
+    const STUD_SECTION = '72x44mm C16';        // matches 70mm insulation depth
+    const FLOOR_JOIST_SECTION = '97x44mm C16'; // matches 100mm insulation depth
+    const STUD_SPACING_MM = 600;
+    const DOUBLE_STUD_MIN_WIDTH_MM = 900; // "big" openings get doubled trimmer studs
+    const PLATE_ALLOW_MM = 100; // top + bottom plate thickness deducted from stud lengths
+
+    function mm(m) { return Math.round(m * 1000); }
+
+    // Wall-top height (m) at local-x u (m, measured from the wall's centreline).
+    // Mirrors the slope logic used to build the 3D walls under a mono-pitch roof.
+    function wallHeightAtFn(wallName) {
+      const w = config.width, d = config.depth, h = config.height;
+      const monoActive = config.roofType === 'flat';
+      const pitchRad = monoActive ? (config.roofPitch || 0) * Math.PI / 180 : 0;
+      const monoRise = monoActive ? d * Math.tan(pitchRad) : 0;
+      const frontH = h + monoRise, backH = h;
+      if (wallName === 'front') return () => frontH;
+      if (wallName === 'back') return () => backH;
+      if (wallName === 'left') return (u) => backH + (frontH - backH) * ((u + d / 2) / d);
+      if (wallName === 'right') return (u) => backH + (frontH - backH) * ((-u + d / 2) / d);
+      return () => h;
+    }
+
+    function isDoubleStudOpening(type, widthMm) {
+      const isDoor = type.startsWith('bifold') || type.startsWith('french') || type === 'single-door' || type.startsWith('sliding');
+      return isDoor || widthMm >= DOUBLE_STUD_MIN_WIDTH_MM;
+    }
+
+    function buildWallCuttingList(wallName, wallLengthM) {
+      const heightAt = wallHeightAtFn(wallName);
+      const Lmm = mm(wallLengthM);
+
+      const openings = config.openings.filter(o => o.wall === wallName).map(o => {
+        const widthMm = mm(getOpeningWidth(o.type));
+        const heightMm = mm(getOpeningHeight(o.type));
+        const centerMm = Lmm / 2 + mm(o.x);
+        const posYMm = mm(getOpeningYPosition(o));
+        const isDoor = o.type.startsWith('bifold') || o.type.startsWith('french') || o.type === 'single-door' || o.type.startsWith('sliding');
+        return {
+          type: o.type, label: getOpeningTitle(o.type), isDoor,
+          centerMm, left: centerMm - widthMm / 2, right: centerMm + widthMm / 2,
+          widthMm, heightMm,
+          sillYMm: posYMm - heightMm / 2, headYMm: posYMm + heightMm / 2,
+          double: isDoubleStudOpening(o.type, widthMm)
+        };
+      }).sort((a, b) => a.left - b.left);
+
+      // Common studs at regular centres, skipping positions inside an opening
+      const studXs = [];
+      for (let x = 0; x <= Lmm; x += STUD_SPACING_MM) studXs.push(x);
+      if (studXs[studXs.length - 1] < Lmm) studXs.push(Lmm);
+      const insideOpening = (x) => openings.some(o => x > o.left + 15 && x < o.right - 15);
+
+      const studs = [];
+      studXs.filter(x => !insideOpening(x)).forEach(x => {
+        const uM = (x - Lmm / 2) / 1000;
+        studs.push({ x_mm: Math.round(x), length_mm: Math.round(mm(heightAt(uM)) - PLATE_ALLOW_MM), role: 'Common Stud', doubled: false });
+      });
+
+      const headers = [], sills = [];
+      openings.forEach(o => {
+        const trimmerLen = Math.round(o.headYMm - 50);
+        const count = o.double ? 2 : 1;
+        [o.left, o.right].forEach(xPos => {
+          for (let i = 0; i < count; i++) {
+            studs.push({ x_mm: Math.round(xPos), length_mm: trimmerLen, role: (o.double ? 'Doubled Trimmer Stud' : 'Jamb Stud') + ' - ' + o.label, doubled: o.double });
+          }
+        });
+        headers.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm + 200, role: (o.double ? 'Doubled ' : '') + 'Header/Lintel - ' + o.label });
+        if (!o.isDoor) {
+          sills.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm, role: 'Sill - ' + o.label });
+        }
+      });
+
+      const leftTopMm = mm(heightAt(-wallLengthM / 2));
+      const rightTopMm = mm(heightAt(wallLengthM / 2));
+      const topPlateLenMm = Math.round(Math.sqrt(Lmm * Lmm + Math.pow(rightTopMm - leftTopMm, 2)));
+
+      return {
+        name: wallName, lengthMm: Lmm, leftTopMm, rightTopMm,
+        studs, headers, sills, openings,
+        bottomPlate: { length_mm: Lmm, role: 'Sole Plate' },
+        topPlates: [{ length_mm: topPlateLenMm, role: 'Top Plate (x2, doubled)' }]
+      };
+    }
+
+    function buildFloorCuttingList() {
+      const Wmm = mm(config.width), Dmm = mm(config.depth);
+      const xs = [];
+      for (let x = 0; x <= Wmm; x += STUD_SPACING_MM) xs.push(x);
+      if (xs[xs.length - 1] < Wmm) xs.push(Wmm);
+      const joists = xs.map(x => ({ x_mm: Math.round(x), length_mm: Dmm, role: 'Floor Joist' }));
+      return {
+        joists,
+        rimJoistsLong: [{ length_mm: Dmm, role: 'Rim Joist (side)', qty: 2 }],
+        rimJoistsShort: [{ length_mm: Wmm, role: 'Rim Joist (end)', qty: 2 }],
+        widthMm: Wmm, depthMm: Dmm
+      };
+    }
+
+    function buildMonoRoofCuttingList() {
+      const w = config.width, d = config.depth, h = config.height, overhang = config.overhang;
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+      const monoRise = d * Math.tan(pitchRad);
+      const frontH = h + monoRise, backH = h;
+      const monoD = d + overhang * 2;
+      const frontTipY = frontH + 0.2 + overhang * Math.tan(pitchRad);
+      const backTipY = backH + 0.2 - overhang * Math.tan(pitchRad);
+      const totalRise = frontTipY - backTipY;
+      const deckLenMm = Math.round(mm(Math.sqrt(monoD * monoD + totalRise * totalRise)));
+      const Wmm = mm(w);
+      const xs = [];
+      for (let x = 0; x <= Wmm; x += STUD_SPACING_MM) xs.push(x);
+      if (xs[xs.length - 1] < Wmm) xs.push(Wmm);
+      const joists = xs.map(x => ({ x_mm: Math.round(x), length_mm: deckLenMm, role: `Roof Joist (bevel-cut ${config.roofPitch}\u00b0 each end)` }));
+      return { type: 'mono', pitchDeg: config.roofPitch, joists, deckLenMm, widthMm: Wmm, depthMm: mm(d) };
+    }
+
+    function buildApexRoofCuttingList() {
+      const w = config.width, d = config.depth, h = config.height, overhang = config.overhang;
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+      const run = w / 2 + overhang;
+      const ridgeY = h + (w / 2) * Math.tan(pitchRad);
+      const eaveTipY = h - overhang * Math.tan(pitchRad);
+      const rise = ridgeY - eaveTipY;
+      const slabLenMm = Math.round(mm(Math.sqrt(run * run + rise * rise)));
+      const tieMm = mm(w);
+      const Dmm = mm(d);
+      const xs = [];
+      for (let x = 0; x <= Dmm; x += STUD_SPACING_MM) xs.push(x);
+      if (xs[xs.length - 1] < Dmm) xs.push(Dmm);
+      const trusses = xs.map(x => ({ x_mm: Math.round(x), rafterLen_mm: slabLenMm, tieLen_mm: tieMm, role: `Truss (${config.roofPitch}\u00b0 pitch)` }));
+      return { type: 'apex', pitchDeg: config.roofPitch, trusses, ridgeLen_mm: Dmm, widthMm: mm(w), depthMm: Dmm };
+    }
+
+    function generateCuttingList() {
+      const w = config.width, d = config.depth;
+      const walls = [
+        buildWallCuttingList('front', w),
+        buildWallCuttingList('back', w),
+        buildWallCuttingList('left', d),
+        buildWallCuttingList('right', d)
+      ];
+      const floor = buildFloorCuttingList();
+      const roof = config.roofType === 'flat' ? buildMonoRoofCuttingList() : buildApexRoofCuttingList();
+      return { walls, floor, roof };
+    }
+
+    // ---------- PDF drawing helpers ----------
+    function pdfCuttingTablePage(doc, title, rows) {
+      doc.setFontSize(14); doc.setTextColor(0); doc.text(title, 15, 18);
+      doc.setFontSize(9);
+      let y = 28;
+      const row = (a, b, c, dd) => {
+        doc.text(String(a), 15, y);
+        doc.text(String(b), 105, y);
+        doc.text(String(c), 150, y);
+        doc.text(String(dd), 195, y);
+        y += 5.5;
+        if (y > 195) { doc.addPage(); y = 20; }
+      };
+      doc.setFont(undefined, 'bold');
+      row('Item', 'Position (mm)', 'Length (mm)', 'Section');
+      doc.setFont(undefined, 'normal');
+      rows.forEach(r => row(r[0], r[1], r[2], r[3]));
+    }
+
+    function wallCuttingRows(wd) {
+      const rows = [];
+      rows.push([wd.bottomPlate.role, '0', wd.bottomPlate.length_mm, STUD_SECTION]);
+      wd.topPlates.forEach(tp => rows.push([tp.role, '0', tp.length_mm, STUD_SECTION]));
+      wd.studs.slice().sort((a, b) => a.x_mm - b.x_mm).forEach(s => rows.push([s.role, s.x_mm, s.length_mm, STUD_SECTION]));
+      wd.headers.forEach(hh => rows.push([hh.role, hh.x_mm, hh.length_mm, STUD_SECTION + ' (doubled)']));
+      wd.sills.forEach(sl => rows.push([sl.role, sl.x_mm, sl.length_mm, STUD_SECTION]));
+      return rows;
+    }
+
+    function drawWallElevationPDF(doc, wallName, wd, wallLengthMm) {
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      doc.text(`Length: ${wallLengthMm}mm   Studs @ ${STUD_SPACING_MM}mm centres   ${STUD_SECTION}`, 15, 25);
+      doc.setTextColor(0);
+
+      const maxHeightMm = Math.max(wd.leftTopMm, wd.rightTopMm, 2400);
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
+      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
+      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.9;
+      const originX = marginX + (drawW - wallLengthMm * scale) / 2;
+      const originY = top + drawH;
+      const toX = x => originX + x * scale;
+      const toY = y => originY - y * scale;
+
+      const leftTopStud = Math.round(wd.leftTopMm - PLATE_ALLOW_MM);
+      const rightTopStud = Math.round(wd.rightTopMm - PLATE_ALLOW_MM);
+
+      doc.setDrawColor(40); doc.setLineWidth(0.5);
+      doc.line(toX(0), toY(0), toX(wallLengthMm), toY(0)); // sole plate
+      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate (sloped if applicable)
+      doc.line(toX(0), toY(0), toX(0), toY(leftTopStud));
+      doc.line(toX(wallLengthMm), toY(0), toX(wallLengthMm), toY(rightTopStud));
+
+      wd.studs.forEach(s => {
+        doc.setLineWidth(s.doubled ? 1.1 : 0.4);
+        doc.line(toX(s.x_mm), toY(0), toX(s.x_mm), toY(s.length_mm));
+      });
+
+      doc.setDrawColor(16, 150, 90); doc.setLineWidth(0.6);
+      wd.openings.forEach(o => {
+        doc.rect(toX(o.left), toY(o.headYMm), (o.right - o.left) * scale, (o.headYMm - o.sillYMm) * scale);
+        doc.setFontSize(7); doc.setTextColor(16, 150, 90);
+        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 2, { align: 'center' });
+      });
+      doc.setDrawColor(40); doc.setTextColor(0);
+
+      doc.setFontSize(8);
+      doc.text('0', toX(0), toY(0) + 6);
+      doc.text(`${wallLengthMm}mm`, toX(wallLengthMm), toY(0) + 6, { align: 'right' });
+    }
+
+    function drawFloorPlanPDF(doc, floorData) {
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text('FLOOR \u2014 JOIST PLAN', 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, spanning ${floorData.depthMm}mm`, 15, 25);
+      doc.setTextColor(0);
+
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
+      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
+      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.9;
+      const originX = marginX + (drawW - floorData.widthMm * scale) / 2;
+      const originY = top + (drawH - floorData.depthMm * scale) / 2;
+      const toX = x => originX + x * scale;
+
+      doc.setDrawColor(40); doc.setLineWidth(0.6);
+      doc.rect(originX, originY, floorData.widthMm * scale, floorData.depthMm * scale);
+      doc.setLineWidth(0.3);
+      floorData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + floorData.depthMm * scale));
+
+      doc.setFontSize(8);
+      doc.text(`${floorData.widthMm}mm`, originX + floorData.widthMm * scale / 2, originY - 4, { align: 'center' });
+    }
+
+    function drawRoofFramingPDF(doc, roofData) {
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text('ROOF \u2014 FRAMING PLAN', 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      if (roofData.type === 'mono') {
+        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, 15, 25);
+      } else {
+        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 dual pitch, ridge runs front-to-back`, 15, 25);
+      }
+      doc.setTextColor(0);
+
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
+      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
+      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.9;
+      const originX = marginX + (drawW - roofData.widthMm * scale) / 2;
+      const originY = top + (drawH - roofData.depthMm * scale) / 2;
+      const toX = x => originX + x * scale;
+      const toY = y => originY + y * scale;
+
+      doc.setDrawColor(40); doc.setLineWidth(0.6);
+      doc.rect(originX, originY, roofData.widthMm * scale, roofData.depthMm * scale);
+      doc.setLineWidth(0.3);
+
+      if (roofData.type === 'mono') {
+        roofData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + roofData.depthMm * scale));
+      } else {
+        doc.setLineWidth(0.7);
+        doc.line(originX + roofData.widthMm * scale / 2, originY, originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale);
+        doc.setLineWidth(0.3);
+        roofData.trusses.forEach(t => doc.line(originX, toY(t.x_mm), originX + roofData.widthMm * scale, toY(t.x_mm)));
+      }
+      doc.setFontSize(8);
+      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 4, { align: 'center' });
+      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 8, { align: 'center' });
+    }
+
+    function buildProductionPackPDF(customer) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const cutData = generateCuttingList();
+
+      // Cover / spec page
+      doc.setFontSize(20); doc.text('Garden Studio \u2014 Production Pack', 15, 20);
+      doc.setFontSize(10); doc.setTextColor(110);
+      doc.text(`Generated ${new Date().toLocaleString('en-GB')}`, 15, 27);
+      doc.setTextColor(0); doc.setFontSize(11);
+      let y = 40;
+      const line = (label, val) => {
+        doc.setFont(undefined, 'bold'); doc.text(label, 15, y);
+        doc.setFont(undefined, 'normal'); doc.text(String(val), 75, y);
+        y += 7;
+      };
+      line('Customer:', customer.name || '-');
+      line('Email:', customer.email || '-');
+      line('Phone:', customer.phone || '-');
+      y += 3;
+      line('Building Size (external):', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
+      line('Overall Height:', `${config.height.toFixed(2)}m`);
+      line('Roof Type:', config.roofType === 'flat' ? 'Mono-pitch / Flat' : 'Apex Dual Pitch');
+      line('Roof Pitch:', `${config.roofPitch}\u00b0`);
+      line('Cladding:', config.cladding);
+      line('Frame Timber:', `Studs ${STUD_SECTION} \u00b7 Floor/Roof Joists ${FLOOR_JOIST_SECTION}`);
+      line('Stud Centres:', `${STUD_SPACING_MM}mm (doubled at doors & openings \u2265${DOUBLE_STUD_MIN_WIDTH_MM}mm)`);
+      y += 3;
+      doc.setFont(undefined, 'bold'); doc.text('Glazing / Openings:', 15, y); doc.setFont(undefined, 'normal'); y += 6;
+      config.openings.forEach(o => { doc.text(`- ${getOpeningTitle(o.type)}  (${o.wall} wall)`, 20, y); y += 5.5; });
+      y += 3;
+      doc.setFont(undefined, 'bold'); doc.text('Estimated Quote:', 15, y);
+      doc.setFont(undefined, 'normal');
+      const priceEl = document.getElementById('price-total');
+      doc.text(priceEl ? priceEl.innerText : '-', 75, y);
+      y += 10;
+      doc.setFontSize(8); doc.setTextColor(130);
+      doc.text('This is a simplified as-designed shop schedule generated from the online configurator. Verify header/lintel spans over 1.2m with a structural engineer before cutting.', 15, y, { maxWidth: 260 });
+
+      // Cutting list pages
+      cutData.walls.forEach(wd => {
+        doc.addPage();
+        pdfCuttingTablePage(doc, `${wd.name.toUpperCase()} WALL \u2014 CUTTING LIST`, wallCuttingRows(wd));
+      });
+      doc.addPage();
+      const floorRows = [];
+      cutData.floor.rimJoistsLong.forEach(r => floorRows.push([r.role + ` x${r.qty}`, '-', r.length_mm, FLOOR_JOIST_SECTION]));
+      cutData.floor.rimJoistsShort.forEach(r => floorRows.push([r.role + ` x${r.qty}`, '-', r.length_mm, FLOOR_JOIST_SECTION]));
+      cutData.floor.joists.forEach(j => floorRows.push([j.role, j.x_mm, j.length_mm, FLOOR_JOIST_SECTION]));
+      pdfCuttingTablePage(doc, 'FLOOR \u2014 CUTTING LIST', floorRows);
+
+      doc.addPage();
+      const roofRows = [];
+      if (cutData.roof.type === 'mono') {
+        cutData.roof.joists.forEach(j => roofRows.push([j.role, j.x_mm, j.length_mm, FLOOR_JOIST_SECTION]));
+      } else {
+        roofRows.push(['Ridge Board', '-', cutData.roof.ridgeLen_mm, FLOOR_JOIST_SECTION]);
+        cutData.roof.trusses.forEach(t => {
+          roofRows.push([t.role + ' - Rafter (x2)', t.x_mm, t.rafterLen_mm, FLOOR_JOIST_SECTION]);
+          roofRows.push([t.role + ' - Ceiling Tie', t.x_mm, t.tieLen_mm, FLOOR_JOIST_SECTION]);
+        });
+      }
+      pdfCuttingTablePage(doc, 'ROOF \u2014 CUTTING LIST', roofRows);
+
+      // Production drawings
+      cutData.walls.forEach(wd => {
+        doc.addPage();
+        drawWallElevationPDF(doc, wd.name, wd, wd.lengthMm);
+      });
+      doc.addPage();
+      drawFloorPlanPDF(doc, cutData.floor);
+      doc.addPage();
+      drawRoofFramingPDF(doc, cutData.roof);
+
+      return doc;
+    }
+
+    function openQuoteModal() {
+      calculatePrice();
+      document.getElementById('quote-modal').classList.remove('hidden');
+      document.getElementById('quote-form-state').classList.remove('hidden');
+      document.getElementById('quote-success-state').classList.add('hidden');
+      document.getElementById('quote-error-msg').classList.add('hidden');
+    }
+    function closeQuoteModal() {
+      document.getElementById('quote-modal').classList.add('hidden');
+    }
+
+    async function submitQuote() {
+      const nameEl = document.getElementById('quote-input-name');
+      const emailEl = document.getElementById('quote-input-email');
+      const phoneEl = document.getElementById('quote-input-phone');
+      const errEl = document.getElementById('quote-error-msg');
+      const btn = document.getElementById('quote-submit-btn');
+      const label = document.getElementById('quote-submit-label');
+
+      const name = nameEl.value.trim();
+      const email = emailEl.value.trim();
+      const phone = phoneEl.value.trim();
+
+      errEl.classList.add('hidden');
+      if (!name || !email) {
+        errEl.textContent = 'Please enter your name and email address.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      label.textContent = 'Sending...';
+
+      try {
+        const doc = buildProductionPackPDF({ name, email, phone });
+        const pdfBlob = doc.output('blob');
+
+        const formData = new FormData();
+        formData.append('_subject', `New Garden Studio Order Request \u2014 ${name}`);
+        formData.append('_captcha', 'false');
+        formData.append('_template', 'box');
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('phone', phone || '-');
+        formData.append('building_size', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
+        formData.append('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
+        formData.append('cladding', config.cladding);
+        formData.append('estimated_quote', document.getElementById('price-total').innerText);
+        formData.append('attachment', pdfBlob, 'production-pack.pdf');
+
+        const res = await fetch('https://formsubmit.co/ajax/tappakah1@gmail.com', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('Request failed');
+
+        document.getElementById('quote-form-state').classList.add('hidden');
+        document.getElementById('quote-success-state').classList.remove('hidden');
+      } catch (err) {
+        errEl.textContent = "Couldn't send automatically \u2014 please email tappakah1@gmail.com directly and we'll sort your quote.";
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        label.textContent = 'Submit Order Request';
+      }
+    }
+
+    document.getElementById('input-width').addEventListener('input', (e) => {
+      config.width = parseFloat(e.target.value);
+      document.getElementById('val-width').innerText = config.width.toFixed(2) + ' m';
+      build3DRoom();
+    });
+
+    document.getElementById('input-depth').addEventListener('input', (e) => {
+      config.depth = parseFloat(e.target.value);
+      document.getElementById('val-depth').innerText = config.depth.toFixed(2) + ' m';
+      build3DRoom();
+    });
+
+    document.getElementById('input-height').addEventListener('input', (e) => {
+      config.height = parseFloat(e.target.value);
+      document.getElementById('val-height').innerText = config.height.toFixed(2) + ' m';
+      build3DRoom();
+    });
+
+    document.getElementById('input-pitch').addEventListener('input', (e) => {
+      config.roofPitch = parseFloat(e.target.value);
+      document.getElementById('val-pitch').innerText = config.roofPitch + '\u00b0';
+      build3DRoom();
+    });
+
+    document.getElementById('input-overhang').addEventListener('input', (e) => {
+      config.overhang = parseFloat(e.target.value);
+      document.getElementById('val-overhang').innerText = config.overhang.toFixed(2) + ' m';
+      build3DRoom();
+    });
+
+    document.getElementById('sun-slider').addEventListener('input', (e) => {
+      const angle = parseFloat(e.target.value);
+      sunLight.position.x = Math.cos(angle) * 16;
+      sunLight.position.z = Math.sin(angle) * 16;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      updateOverlayUI();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('load', () => {
+      updateCanvasSize();
+      renderPlacedOpeningsList();
+      build3DRoom();
+      setCameraView('3d');
+      animate();
+    });
+  </script>
 </body>
 </html>
