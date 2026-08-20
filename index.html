@@ -191,6 +191,7 @@
             </div>
           </div>
         </div>
+      </div>
 
       <!-- TAB 2: CLADDING & FINISHES -->
       <div id="content-materials" class="tab-content hidden space-y-4">
@@ -1085,6 +1086,68 @@
         post.position.set(pos[0], pos[2]/2 + 0.2, pos[1]);
         roomGroup.add(post);
       });
+
+      // Build L-Shape Extension (if enabled)
+      if (config.lShape) {
+        const extW = config.lShapeWidth;
+        const extD = config.lShapeDepth;
+        const extH = h; // same height as main room
+        
+        let extX, extStartX;
+        
+        if (config.lShape === 'left') {
+          // Extension on the left side
+          extX = -w/2 - extW/2;
+          extStartX = -w/2;
+        } else {
+          // Extension on the right side
+          extX = w/2 + extW/2;
+          extStartX = w/2;
+        }
+        
+        // Build floor for extension
+        const extFloorGeo = new THREE.PlaneGeometry(extW - wallThick, extD - wallThick);
+        const extFloor = new THREE.Mesh(extFloorGeo, floorMat);
+        extFloor.rotation.x = -Math.PI / 2;
+        extFloor.position.set(extX, 0.201, 0);
+        roomGroup.add(extFloor);
+        
+        // Build extension walls
+        const extFrontH = h; // simplified, no pitch on extension
+        
+        // Front wall of extension
+        buildWallWithOpenings('ext-front', extW, extX, d/2 - wallThick/2, 0, extFrontH);
+        // Back wall of extension  
+        buildWallWithOpenings('ext-back', extW, extX, -d/2 + wallThick/2, Math.PI, extFrontH);
+        
+        // Left/Right wall of extension (connecting to main structure)
+        buildWallWithOpenings('ext-side', extD, extStartX + (config.lShape === 'left' ? -wallThick/2 : wallThick/2), 0, config.lShape === 'left' ? -Math.PI/2 : Math.PI/2, extFrontH);
+        
+        // Outer left/right wall of extension
+        const outerSideX = config.lShape === 'left' ? extX - extW/2 + wallThick/2 : extX + extW/2 - wallThick/2;
+        buildWallWithOpenings('ext-outer', extD, outerSideX, 0, config.lShape === 'left' ? -Math.PI/2 : Math.PI/2, extFrontH);
+        
+        // Interior wall for extension
+        const intExtWallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 });
+        const intExtGeo = new THREE.PlaneGeometry(extW - wallThick*2, extH);
+        const intExt = new THREE.Mesh(intExtGeo, intExtWallMat);
+        intExt.position.set(extX, extH/2 + 0.2, -d/2 + wallThick + 0.001);
+        roomGroup.add(intExt);
+        
+        // Extension corner posts
+        const extCornerH = extFrontH;
+        [
+          [config.lShape === 'left' ? -w/2 - extW + 0.02 : w/2 + extW - 0.02, d/2 - 0.02, extCornerH],
+          [config.lShape === 'left' ? -w/2 - extW + 0.02 : w/2 + extW - 0.02, -d/2 + 0.02, extCornerH],
+          [config.lShape === 'left' ? -w/2 + 0.02 : w/2 - 0.02, d/2 - 0.02, extCornerH],
+          [config.lShape === 'left' ? -w/2 + 0.02 : w/2 - 0.02, -d/2 + 0.02, extCornerH]
+        ].forEach(pos => {
+          const postGeo = new THREE.BoxGeometry(0.08, pos[2], 0.08);
+          const post = new THREE.Mesh(postGeo, frameMaterial);
+          post.position.set(pos[0], pos[2]/2 + 0.2, pos[1]);
+          roomGroup.add(post);
+        });
+      }
 
       // Build Internal Walls
       config.internalWalls.forEach(iwall => {
@@ -3280,6 +3343,7 @@
     window.addEventListener('load', () => {
       updateCanvasSize();
       renderPlacedOpeningsList();
+      renderInternalWallsList();
       build3DRoom();
       setCameraView('3d');
       animate();
