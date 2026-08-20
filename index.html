@@ -80,6 +80,9 @@
       <button onclick="switchTab('openings')" id="tab-openings" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
         <i class="fa-solid fa-door-open block mb-1 text-sm"></i> Glazing
       </button>
+      <button onclick="switchTab('internal')" id="tab-internal" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
+        <i class="fa-solid fa-plus block mb-1 text-sm"></i> Walls
+      </button>
       <button onclick="switchTab('decking')" id="tab-decking" class="tab-btn flex-1 py-3 hover:text-zinc-200 transition">
         <i class="fa-solid fa-sliders block mb-1 text-sm"></i> Options
       </button>
@@ -149,7 +152,45 @@
           </div>
           <input type="range" id="input-overhang" min="0.1" max="0.8" step="0.05" value="0.4" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
         </div>
-      </div>
+
+        <hr class="border-zinc-800 mt-5">
+
+        <!-- L-SHAPE CONFIGURATION -->
+        <div class="space-y-3 mt-4">
+          <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Room Shape</label>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="setLShape(false)" id="shape-rect" class="shape-btn p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 text-left transition">
+              <div class="font-semibold text-xs text-zinc-100">Rectangle</div>
+              <div class="text-[10px] text-zinc-400 mt-0.5">Standard rectangular layout</div>
+            </button>
+            <button onclick="setLShape('left')" id="shape-l-left" class="shape-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 text-left transition">
+              <div class="font-semibold text-xs text-zinc-100">L-Shape (Left Extension)</div>
+              <div class="text-[10px] text-zinc-400 mt-0.5">Added section on left side</div>
+            </button>
+            <button onclick="setLShape('right')" id="shape-l-right" class="shape-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 text-left transition">
+              <div class="font-semibold text-xs text-zinc-100">L-Shape (Right Extension)</div>
+              <div class="text-[10px] text-zinc-400 mt-0.5">Added section on right side</div>
+            </button>
+          </div>
+
+          <!-- L-Shape Dimensions -->
+          <div id="lshape-dimensions" class="hidden space-y-3 mt-3 p-3 bg-zinc-800/30 rounded-lg border border-zinc-700">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Extension Width</label>
+                <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30" id="val-lshape-width">2.00 m</span>
+              </div>
+              <input type="range" id="input-lshape-width" min="1.0" max="4.0" step="0.25" value="2.0" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Extension Depth</label>
+                <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30" id="val-lshape-depth">1.50 m</span>
+              </div>
+              <input type="range" id="input-lshape-depth" min="0.8" max="3.0" step="0.25" value="1.5" class="w-full range-slider bg-zinc-800 h-2 rounded-lg appearance-none">
+            </div>
+          </div>
+        </div>
 
       <!-- TAB 2: CLADDING & FINISHES -->
       <div id="content-materials" class="tab-content hidden space-y-4">
@@ -404,7 +445,25 @@
         </div>
       </div>
 
-      <!-- TAB 4: EXTRAS & DECKING -->
+      <!-- TAB 4: INTERNAL WALLS -->
+      <div id="content-internal" class="tab-content hidden space-y-4">
+        <div class="space-y-3">
+          <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Add Internal Partitions</label>
+          
+          <button onclick="addInternalWall()" class="w-full p-3 rounded-xl border border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add Internal Wall
+          </button>
+
+          <div class="space-y-2.5" id="internal-walls-list">
+            <!-- Dynamically populated -->
+          </div>
+
+          <hr class="border-zinc-800 mt-4">
+          <p class="text-[11px] text-zinc-500 italic">Internal walls can include door openings with client-specified dimensions. Walls won't include actual doors—just the structural openings.</p>
+        </div>
+      </div>
+
+      <!-- TAB 5: EXTRAS & DECKING -->
       <div id="content-decking" class="tab-content hidden space-y-4">
         <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Veranda & Accessories</label>
 
@@ -728,11 +787,15 @@
       frameColor: '#18181b',
       showDimensions: true,
       showFurniture: true,
-      targetWall: 'front', // Wall to add new glazing onto
+      targetWall: 'front',
+      lShape: false, // false, 'left', or 'right'
+      lShapeWidth: 2.0, // width of the extension
+      lShapeDepth: 1.5, // depth of the extension
       openings: [
         { id: '1', type: 'bifold-240', wall: 'front', x: 0 },
         { id: '2', type: 'window-high-120', wall: 'right', x: 0.8, y: 1.95 }
       ],
+      internalWalls: [], // Array of {id, x, z, length, orientation, section, openings: [{width, height, x, type}]}
       hasDecking: true,
       hasHeating: false
     };
@@ -1021,6 +1084,93 @@
         const post = new THREE.Mesh(postGeo, frameMaterial);
         post.position.set(pos[0], pos[2]/2 + 0.2, pos[1]);
         roomGroup.add(post);
+      });
+
+      // Build Internal Walls
+      config.internalWalls.forEach(iwall => {
+        const intWallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 });
+        const wallLength = iwall.length;
+        const wallHeight = h;
+        const sectionThick = 0.05; // internal wall thickness in 3D
+        
+        // Main wall panel
+        let wallGeo;
+        let wallMesh;
+        
+        if (iwall.orientation === 'horizontal') {
+          // Running left-right
+          wallGeo = new THREE.BoxGeometry(wallLength, wallHeight, sectionThick);
+          wallMesh = new THREE.Mesh(wallGeo, intWallMat);
+          wallMesh.position.set(iwall.x, wallHeight/2 + 0.2, iwall.z);
+        } else {
+          // Running front-back
+          wallGeo = new THREE.BoxGeometry(sectionThick, wallHeight, wallLength);
+          wallMesh = new THREE.Mesh(wallGeo, intWallMat);
+          wallMesh.position.set(iwall.x, wallHeight/2 + 0.2, iwall.z);
+        }
+        
+        wallMesh.castShadow = true;
+        wallMesh.receiveShadow = true;
+        roomGroup.add(wallMesh);
+        
+        // Add studs visualization (simple lines)
+        const studSpacing = 0.6;
+        const studMat = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 1 });
+        
+        if (iwall.orientation === 'horizontal') {
+          for (let x = -wallLength/2; x <= wallLength/2; x += studSpacing) {
+            const studGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array([
+              iwall.x + x, 0.2, iwall.z,
+              iwall.x + x, wallHeight + 0.2, iwall.z
+            ]);
+            studGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const stud = new THREE.Line(studGeo, studMat);
+            roomGroup.add(stud);
+          }
+        }
+        
+        // Create openings in internal walls
+        iwall.openings.forEach(opening => {
+          const openingGeo = new THREE.BoxGeometry(opening.width * 0.95, opening.height * 0.95, sectionThick * 2);
+          const openingMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, transparent: true, opacity: 0 });
+          const openingCutout = new THREE.Mesh(openingGeo, openingMaterial);
+          
+          if (iwall.orientation === 'horizontal') {
+            openingCutout.position.set(iwall.x + opening.x - wallLength/2, 0.2 + opening.height/2 + 0.3, iwall.z);
+          } else {
+            openingCutout.position.set(iwall.x, 0.2 + opening.height/2 + 0.3, iwall.z + opening.x - wallLength/2);
+          }
+          
+          // Draw opening frame in simple lines
+          const frameColor = 0x444444;
+          const frameMat = new THREE.LineBasicMaterial({ color: frameColor, linewidth: 2 });
+          const frameGeo = new THREE.BufferGeometry();
+          
+          const opW = opening.width;
+          const opH = opening.height;
+          const positions = new Float32Array([
+            // Top
+            -opW/2, opH/2, 0,  opW/2, opH/2, 0,
+            // Bottom
+            -opW/2, -opH/2, 0,  opW/2, -opH/2, 0,
+            // Left
+            -opW/2, opH/2, 0,  -opW/2, -opH/2, 0,
+            // Right
+            opW/2, opH/2, 0,  opW/2, -opH/2, 0
+          ]);
+          
+          frameGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          const frame = new THREE.LineSegments(frameGeo, frameMat);
+          
+          if (iwall.orientation === 'horizontal') {
+            frame.position.set(iwall.x + opening.x - wallLength/2, 0.2 + opening.height/2 + 0.3, iwall.z);
+          } else {
+            frame.position.set(iwall.x, 0.2 + opening.height/2 + 0.3, iwall.z + opening.x - wallLength/2);
+          }
+          
+          roomGroup.add(frame);
+        });
       });
 
       // Place Glazing Assemblies
@@ -1756,6 +1906,177 @@
       build3DRoom();
     }
 
+    function setLShape(shape) {
+      config.lShape = shape;
+      document.querySelectorAll('.shape-btn').forEach(btn => {
+        btn.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        btn.classList.add('border-zinc-800', 'bg-zinc-800/40');
+      });
+      const activeBtn = shape === false ? document.getElementById('shape-rect') : (shape === 'left' ? document.getElementById('shape-l-left') : document.getElementById('shape-l-right'));
+      if (activeBtn) {
+        activeBtn.classList.remove('border-zinc-800', 'bg-zinc-800/40');
+        activeBtn.classList.add('border-emerald-500', 'bg-emerald-500/10');
+      }
+      const lshapeDims = document.getElementById('lshape-dimensions');
+      if (shape) {
+        lshapeDims.classList.remove('hidden');
+      } else {
+        lshapeDims.classList.add('hidden');
+      }
+      build3DRoom();
+    }
+
+    function addInternalWall() {
+      const id = 'iw-' + Date.now();
+      config.internalWalls.push({
+        id,
+        x: 0,
+        z: 0,
+        length: 2.0,
+        orientation: 'horizontal', // 'horizontal' or 'vertical'
+        section: '72x35', // '72x35' or '97x35'
+        openings: []
+      });
+      renderInternalWallsList();
+      build3DRoom();
+    }
+
+    function removeInternalWall(id) {
+      config.internalWalls = config.internalWalls.filter(w => w.id !== id);
+      renderInternalWallsList();
+      build3DRoom();
+    }
+
+    function updateInternalWall(id, prop, value) {
+      const wall = config.internalWalls.find(w => w.id === id);
+      if (wall) {
+        wall[prop] = value;
+        if (prop === 'length' || prop === 'x' || prop === 'z' || prop === 'orientation') {
+          build3DRoom();
+        }
+      }
+    }
+
+    function addWallOpening(wallId) {
+      const wall = config.internalWalls.find(w => w.id === wallId);
+      if (wall) {
+        wall.openings.push({
+          width: 0.8,
+          height: 2.0,
+          x: wall.length / 2 - 0.4,
+          type: 'door'
+        });
+        renderInternalWallsList();
+        build3DRoom();
+      }
+    }
+
+    function removeWallOpening(wallId, openingIndex) {
+      const wall = config.internalWalls.find(w => w.id === wallId);
+      if (wall) {
+        wall.openings.splice(openingIndex, 1);
+        renderInternalWallsList();
+        build3DRoom();
+      }
+    }
+
+    function renderInternalWallsList() {
+      const container = document.getElementById('internal-walls-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      config.internalWalls.forEach((wall, idx) => {
+        const wallEl = document.createElement('div');
+        wallEl.className = 'p-3 bg-zinc-800/40 border border-zinc-700 rounded-xl space-y-3';
+        wallEl.innerHTML = `
+          <div class="flex items-start justify-between mb-2">
+            <div>
+              <div class="font-semibold text-xs text-zinc-100">Internal Wall ${idx + 1}</div>
+              <div class="text-[10px] text-zinc-400">${wall.section}mm timber</div>
+            </div>
+            <button onclick="removeInternalWall('${wall.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/40 text-xs rounded-lg transition">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="text-zinc-400">Position X (m)</label>
+              <input type="number" value="${wall.x.toFixed(2)}" step="0.1" onchange="updateInternalWall('${wall.id}', 'x', parseFloat(this.value))" class="w-full px-2 py-1 bg-zinc-900 border border-zinc-700 rounded text-zinc-100 text-xs">
+            </div>
+            <div>
+              <label class="text-zinc-400">Position Z (m)</label>
+              <input type="number" value="${wall.z.toFixed(2)}" step="0.1" onchange="updateInternalWall('${wall.id}', 'z', parseFloat(this.value))" class="w-full px-2 py-1 bg-zinc-900 border border-zinc-700 rounded text-zinc-100 text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="text-zinc-400">Length (m)</label>
+              <input type="number" value="${wall.length.toFixed(2)}" step="0.1" min="0.5" onchange="updateInternalWall('${wall.id}', 'length', parseFloat(this.value))" class="w-full px-2 py-1 bg-zinc-900 border border-zinc-700 rounded text-zinc-100">
+            </div>
+            <div>
+              <label class="text-zinc-400">Section</label>
+              <select onchange="updateInternalWall('${wall.id}', 'section', this.value)" class="w-full px-2 py-1 bg-zinc-900 border border-zinc-700 rounded text-zinc-100 text-xs">
+                <option value="72x35" ${wall.section === '72x35' ? 'selected' : ''}>72x35mm</option>
+                <option value="97x35" ${wall.section === '97x35' ? 'selected' : ''}>97x35mm</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="text-xs">
+            <label class="text-zinc-400">Orientation</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="updateInternalWall('${wall.id}', 'orientation', 'horizontal')" class="py-1 px-2 rounded ${wall.orientation === 'horizontal' ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-400' : 'bg-zinc-900 border border-zinc-700 text-zinc-400'} transition text-xs font-medium">
+                ↔ Horizontal
+              </button>
+              <button onclick="updateInternalWall('${wall.id}', 'orientation', 'vertical')" class="py-1 px-2 rounded ${wall.orientation === 'vertical' ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-400' : 'bg-zinc-900 border border-zinc-700 text-zinc-400'} transition text-xs font-medium">
+                ↕ Vertical
+              </button>
+            </div>
+          </div>
+
+          <hr class="border-zinc-700">
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Openings</label>
+              <button onclick="addWallOpening('${wall.id}')" class="px-2 py-0.5 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded transition">
+                + Add Opening
+              </button>
+            </div>
+            <div class="space-y-2" id="openings-${wall.id}">
+              ${wall.openings.map((op, opIdx) => `
+                <div class="p-2 bg-zinc-900/50 rounded border border-zinc-700 text-xs">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-zinc-400">Opening ${opIdx + 1} (${op.type})</span>
+                    <button onclick="removeWallOpening('${wall.id}', ${opIdx})" class="text-rose-400 hover:text-rose-300 text-xs">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div class="grid grid-cols-3 gap-1 text-zinc-400">
+                    <div>
+                      <label class="text-[9px]">Width (m)</label>
+                      <input type="number" value="${op.width.toFixed(2)}" step="0.05" onchange="config.internalWalls.find(w => w.id === '${wall.id}').openings[${opIdx}].width = parseFloat(this.value); build3DRoom();" class="w-full px-1 py-0.5 bg-zinc-950 border border-zinc-600 rounded text-zinc-100 text-xs">
+                    </div>
+                    <div>
+                      <label class="text-[9px]">Height (m)</label>
+                      <input type="number" value="${op.height.toFixed(2)}" step="0.05" onchange="config.internalWalls.find(w => w.id === '${wall.id}').openings[${opIdx}].height = parseFloat(this.value); build3DRoom();" class="w-full px-1 py-0.5 bg-zinc-950 border border-zinc-600 rounded text-zinc-100 text-xs">
+                    </div>
+                    <div>
+                      <label class="text-[9px]">Position (m)</label>
+                      <input type="number" value="${op.x.toFixed(2)}" step="0.05" onchange="config.internalWalls.find(w => w.id === '${wall.id}').openings[${opIdx}].x = parseFloat(this.value); build3DRoom();" class="w-full px-1 py-0.5 bg-zinc-950 border border-zinc-600 rounded text-zinc-100 text-xs">
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+        container.appendChild(wallEl);
+      });
+    }
+
     function addOpening(type) {
       const newId = Date.now().toString();
       const defaultY = getOpeningYPosition({ type: type });
@@ -2064,6 +2385,10 @@
       config.roofPitch = 3;
       config.cladding = 'cedar';
       config.targetWall = 'front';
+      config.lShape = false;
+      config.lShapeWidth = 2.0;
+      config.lShapeDepth = 1.5;
+      config.internalWalls = [];
       config.openings = [
         { id: '1', type: 'bifold-240', wall: 'front', x: 0 },
         { id: '2', type: 'window-high-120', wall: 'right', x: 0.8, y: 1.95 }
@@ -2086,9 +2411,11 @@
         activeRoofBtn.classList.add('border-emerald-500', 'bg-emerald-500/10');
       }
       updatePitchControl('flat');
-
+      
+      setLShape(false);
       setTargetWall('front');
       renderPlacedOpeningsList();
+      renderInternalWallsList();
       build3DRoom();
     }
 
@@ -2242,26 +2569,97 @@
       ];
       const floor = buildFloorCuttingList();
       const roof = config.roofType === 'flat' ? buildMonoRoofCuttingList() : buildApexRoofCuttingList();
-      return { walls, floor, roof };
+      
+      // Internal walls cutting list
+      const internalWalls = config.internalWalls.map(iwall => ({
+        id: iwall.id,
+        length: iwall.length,
+        section: iwall.section,
+        openings: iwall.openings
+      }));
+      
+      return { walls, floor, roof, internalWalls };
     }
 
     // ---------- PDF drawing helpers ----------
     function pdfCuttingTablePage(doc, title, rows) {
-      doc.setFontSize(14); doc.setTextColor(0); doc.text(title, 15, 18);
-      doc.setFontSize(9);
-      let y = 28;
-      const row = (a, b, c, dd) => {
-        doc.text(String(a), 15, y);
-        doc.text(String(b), 105, y);
-        doc.text(String(c), 150, y);
-        doc.text(String(dd), 195, y);
-        y += 5.5;
-        if (y > 195) { doc.addPage(); y = 20; }
-      };
+      const pageW = 297, pageH = 210;
+      const margin = 12;
+      
+      // Header with title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text(title, margin, 18);
+      
+      // Subtitle with date
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.text(`Generated ${new Date().toLocaleDateString('en-GB')}`, margin, 24);
+      
+      // Table setup
+      const colX = [margin, 85, 150, 205];
+      const headerY = 30;
+      const rowH = 6.5;
+      
+      // Draw header background
+      doc.setFillColor(220, 220, 220);
+      doc.rect(colX[0], headerY - 4, pageW - margin * 2, rowH + 1, 'F');
+      
+      // Header text
       doc.setFont(undefined, 'bold');
-      row('Item', 'Position (mm)', 'Length (mm)', 'Section');
+      doc.setFontSize(9);
+      doc.setTextColor(0);
+      doc.text('Item / Member', colX[0] + 2, headerY + 1.5);
+      doc.text('Position (mm)', colX[1] + 2, headerY + 1.5);
+      doc.text('Length (mm)', colX[2] + 2, headerY + 1.5);
+      doc.text('Section', colX[3] + 2, headerY + 1.5);
+      
+      // Draw header bottom line
+      doc.setDrawColor(100);
+      doc.setLineWidth(0.5);
+      doc.line(margin, headerY + 3.5, pageW - margin, headerY + 3.5);
+      
+      let y = headerY + rowH + 1;
+      let rowCount = 0;
+      
       doc.setFont(undefined, 'normal');
-      rows.forEach(r => row(r[0], r[1], r[2], r[3]));
+      doc.setFontSize(8.5);
+      
+      rows.forEach((r, idx) => {
+        if (y > pageH - 15) {
+          doc.addPage();
+          // Repeat header on new page
+          doc.setFillColor(220, 220, 220);
+          doc.rect(colX[0], 16, pageW - margin * 2, rowH + 1, 'F');
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(0);
+          doc.text('Item / Member', colX[0] + 2, 18.5);
+          doc.text('Position (mm)', colX[1] + 2, 18.5);
+          doc.text('Length (mm)', colX[2] + 2, 18.5);
+          doc.text('Section', colX[3] + 2, 18.5);
+          doc.setDrawColor(100);
+          doc.setLineWidth(0.5);
+          doc.line(margin, 22.5, pageW - margin, 22.5);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8.5);
+          y = 28;
+          rowCount = 0;
+        }
+        
+        // Alternate row shading
+        if (rowCount % 2 === 1) {
+          doc.setFillColor(245, 245, 245);
+          doc.rect(colX[0], y - 5, pageW - margin * 2, rowH, 'F');
+        }
+        
+        doc.setTextColor(0);
+        doc.text(String(r[0]), colX[0] + 2, y);
+        doc.text(String(r[1] === '-' ? '-' : r[1]), colX[1] + 2, y);
+        doc.text(String(r[2]), colX[2] + 2, y);
+        doc.text(String(r[3]), colX[3] + 2, y);
+        
+        y += rowH;
+        rowCount++;
+      });
     }
 
     function wallCuttingRows(wd) {
@@ -2275,139 +2673,291 @@
     }
 
     function drawWallElevationPDF(doc, wallName, wd, wallLengthMm) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text(`Length: ${wallLengthMm}mm   Studs @ ${STUD_SPACING_MM}mm centres   ${STUD_SECTION}`, 15, 25);
-      doc.setTextColor(0);
-
+      const pageW = 297, pageH = 210, marginX = 15, marginY = 15, top = 35, bottom = 20;
+      
+      // Title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, marginX, 18);
+      
+      // Spec info
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.text(`Length: ${(wallLengthMm / 1000).toFixed(2)}m   |   Studs @ ${STUD_SPACING_MM}mm centres (${STUD_SECTION})`, marginX, 25);
+      
       const maxHeightMm = Math.max(wd.leftTopMm, wd.rightTopMm, 2400);
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.9;
+      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.85;
       const originX = marginX + (drawW - wallLengthMm * scale) / 2;
-      const originY = top + drawH;
+      const originY = top + drawH - 10;
       const toX = x => originX + x * scale;
       const toY = y => originY - y * scale;
 
       const leftTopStud = Math.round(wd.leftTopMm - PLATE_ALLOW_MM);
       const rightTopStud = Math.round(wd.rightTopMm - PLATE_ALLOW_MM);
 
-      doc.setDrawColor(40); doc.setLineWidth(0.5);
+      // Draw main framing
+      doc.setDrawColor(40); doc.setLineWidth(0.7);
       doc.line(toX(0), toY(0), toX(wallLengthMm), toY(0)); // sole plate
-      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate (sloped if applicable)
+      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate
       doc.line(toX(0), toY(0), toX(0), toY(leftTopStud));
       doc.line(toX(wallLengthMm), toY(0), toX(wallLengthMm), toY(rightTopStud));
 
+      // Draw studs
       wd.studs.forEach(s => {
-        doc.setLineWidth(s.doubled ? 1.1 : 0.4);
+        doc.setLineWidth(s.doubled ? 0.8 : 0.3);
+        doc.setDrawColor(s.doubled ? 20 : 80);
         doc.line(toX(s.x_mm), toY(0), toX(s.x_mm), toY(s.length_mm));
       });
 
+      // Draw openings
       doc.setDrawColor(16, 150, 90); doc.setLineWidth(0.6);
       wd.openings.forEach(o => {
         doc.rect(toX(o.left), toY(o.headYMm), (o.right - o.left) * scale, (o.headYMm - o.sillYMm) * scale);
-        doc.setFontSize(7); doc.setTextColor(16, 150, 90);
-        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 2, { align: 'center' });
+        doc.setFontSize(7); doc.setTextColor(16, 150, 90); doc.setFont(undefined, 'bold');
+        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 3, { align: 'center', maxWidth: 20 });
       });
-      doc.setDrawColor(40); doc.setTextColor(0);
-
-      doc.setFontSize(8);
-      doc.text('0', toX(0), toY(0) + 6);
-      doc.text(`${wallLengthMm}mm`, toX(wallLengthMm), toY(0) + 6, { align: 'right' });
+      
+      // Dimension lines
+      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
+      doc.setFontSize(7);
+      
+      // Bottom dimension
+      const dimY = originY + 12;
+      doc.line(toX(0), originY + 6, toX(0), dimY);
+      doc.line(toX(0), dimY, toX(wallLengthMm), dimY);
+      doc.line(toX(wallLengthMm), originY + 6, toX(wallLengthMm), dimY);
+      doc.text(`${(wallLengthMm / 1000).toFixed(2)}m`, toX(wallLengthMm / 2), dimY + 4, { align: 'center' });
+      
+      // Height dimension
+      const leftDimX = originX - 8;
+      doc.line(originX - 3, toY(0), leftDimX, toY(0));
+      doc.line(leftDimX, toY(0), leftDimX, toY(leftTopStud));
+      doc.line(originX - 3, toY(leftTopStud), leftDimX, toY(leftTopStud));
+      doc.text(`${(leftTopStud / 1000).toFixed(2)}m`, leftDimX - 3, toY(leftTopStud / 2) + 1, { align: 'right' });
+      
+      doc.setTextColor(0);
     }
 
     function drawFloorPlanPDF(doc, floorData) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('FLOOR \u2014 JOIST PLAN', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, spanning ${floorData.depthMm}mm`, 15, 25);
-      doc.setTextColor(0);
+      const pageW = 297, pageH = 210, marginX = 15, top = 35, bottom = 20;
+      
+      // Title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text('FLOOR \u2014 JOIST PLAN', marginX, 18);
+      
+      // Spec info
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   Spanning ${(floorData.depthMm / 1000).toFixed(2)}m`, marginX, 25);
 
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.9;
+      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.85;
       const originX = marginX + (drawW - floorData.widthMm * scale) / 2;
       const originY = top + (drawH - floorData.depthMm * scale) / 2;
       const toX = x => originX + x * scale;
+      const toY = y => originY + y * scale;
 
-      doc.setDrawColor(40); doc.setLineWidth(0.6);
+      // Draw floor outline
+      doc.setDrawColor(40); doc.setLineWidth(0.8);
       doc.rect(originX, originY, floorData.widthMm * scale, floorData.depthMm * scale);
-      doc.setLineWidth(0.3);
+      
+      // Draw joists
+      doc.setLineWidth(0.3); doc.setDrawColor(60);
       floorData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + floorData.depthMm * scale));
 
-      doc.setFontSize(8);
-      doc.text(`${floorData.widthMm}mm`, originX + floorData.widthMm * scale / 2, originY - 4, { align: 'center' });
+      // Dimensions
+      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
+      doc.setFontSize(7); doc.setFont(undefined, 'normal');
+      
+      // Width dimension
+      const dimYBelow = originY + floorData.depthMm * scale + 6;
+      doc.line(originX, originY + floorData.depthMm * scale, originX, dimYBelow - 2);
+      doc.line(originX, dimYBelow, toX(floorData.widthMm), dimYBelow);
+      doc.line(toX(floorData.widthMm), originY + floorData.depthMm * scale, toX(floorData.widthMm), dimYBelow - 2);
+      doc.text(`${(floorData.widthMm / 1000).toFixed(2)}m`, originX + floorData.widthMm * scale / 2, dimYBelow + 4, { align: 'center' });
+      
+      // Depth dimension
+      const dimXLeft = originX - 8;
+      doc.line(originX - 3, originY, dimXLeft, originY);
+      doc.line(dimXLeft, originY, dimXLeft, toY(floorData.depthMm));
+      doc.line(originX - 3, toY(floorData.depthMm), dimXLeft, toY(floorData.depthMm));
+      doc.text(`${(floorData.depthMm / 1000).toFixed(2)}m`, dimXLeft - 3, originY + floorData.depthMm * scale / 2 + 1, { align: 'right' });
+      
+      doc.setTextColor(0);
     }
 
     function drawRoofFramingPDF(doc, roofData) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('ROOF \u2014 FRAMING PLAN', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
+      const pageW = 297, pageH = 210, marginX = 15, top = 35, bottom = 20;
+      
+      // Title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text('ROOF \u2014 FRAMING PLAN', marginX, 18);
+      
+      // Spec info
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
       if (roofData.type === 'mono') {
-        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, 15, 25);
+        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, marginX, 25);
       } else {
-        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 dual pitch, ridge runs front-to-back`, 15, 25);
+        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   ${roofData.pitchDeg}\u00b0 dual pitch   Ridge front-to-back`, marginX, 25);
       }
-      doc.setTextColor(0);
 
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.9;
+      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.85;
       const originX = marginX + (drawW - roofData.widthMm * scale) / 2;
       const originY = top + (drawH - roofData.depthMm * scale) / 2;
       const toX = x => originX + x * scale;
       const toY = y => originY + y * scale;
 
-      doc.setDrawColor(40); doc.setLineWidth(0.6);
+      // Draw outline
+      doc.setDrawColor(40); doc.setLineWidth(0.8);
       doc.rect(originX, originY, roofData.widthMm * scale, roofData.depthMm * scale);
-      doc.setLineWidth(0.3);
+      
+      // Draw framing members
+      doc.setLineWidth(0.3); doc.setDrawColor(60);
 
       if (roofData.type === 'mono') {
         roofData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + roofData.depthMm * scale));
       } else {
-        doc.setLineWidth(0.7);
+        // Ridge line (thicker)
+        doc.setLineWidth(0.7); doc.setDrawColor(20);
         doc.line(originX + roofData.widthMm * scale / 2, originY, originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale);
-        doc.setLineWidth(0.3);
+        // Trusses
+        doc.setLineWidth(0.3); doc.setDrawColor(60);
         roofData.trusses.forEach(t => doc.line(originX, toY(t.x_mm), originX + roofData.widthMm * scale, toY(t.x_mm)));
       }
-      doc.setFontSize(8);
-      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 4, { align: 'center' });
-      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 8, { align: 'center' });
+      
+      // Labels
+      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
+      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 3, { align: 'center' });
+      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 6, { align: 'center' });
+      
+      // Dimensions
+      doc.setFont(undefined, 'normal'); doc.setFontSize(7);
+      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
+      
+      // Width dimension
+      const dimYBelow = originY + roofData.depthMm * scale + 6;
+      doc.line(originX, originY + roofData.depthMm * scale, originX, dimYBelow - 2);
+      doc.line(originX, dimYBelow, toX(roofData.widthMm), dimYBelow);
+      doc.line(toX(roofData.widthMm), originY + roofData.depthMm * scale, toX(roofData.widthMm), dimYBelow - 2);
+      doc.text(`${(roofData.widthMm / 1000).toFixed(2)}m`, originX + roofData.widthMm * scale / 2, dimYBelow + 4, { align: 'center' });
+      
+      doc.setTextColor(0);
     }
 
     function pdf3DModelPage(doc, shots) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('3D MODEL \u2014 VISUAL REFERENCE', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text('Renders generated directly from the online configurator at time of order.', 15, 25);
+      const pageW = 297, pageH = 210;
+      const margin = 12;
+      const gap = 4;
+      
+      // Title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text('3D MODEL \u2014 VISUAL REFERENCE', margin, 18);
+      
+      // Subtitle
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.text('Renders generated from the online configurator at time of order.', margin, 24);
+
+      const drawW = pageW - margin * 2;
+      const availH = pageH - 30;
+      
+      // 3-view layout: 3D on top, Front and Top side by side below
+      const topH = availH * 0.5;
+      const bottomH = availH * 0.48;
+      const sideW = (drawW - gap) / 2;
+      
+      // 3D isometric view (full width on top)
+      doc.setDrawColor(180); doc.setLineWidth(0.5);
+      doc.addImage(shots['3d'], 'JPEG', margin, 28, drawW, topH);
+      doc.rect(margin, 28, drawW, topH);
+      
+      // Front and Top views below
+      const bottomY = 28 + topH + gap;
+      
+      // Front Elevation
+      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
+      doc.text('Front Elevation', margin, bottomY - 2);
+      doc.setFont(undefined, 'normal');
+      doc.addImage(shots['front'], 'JPEG', margin, bottomY, sideW, bottomH);
+      doc.rect(margin, bottomY, sideW, bottomH);
+      
+      // Top / Plan View
+      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
+      doc.text('Top / Plan View', margin + sideW + gap, bottomY - 2);
+      doc.setFont(undefined, 'normal');
+      doc.addImage(shots['top'], 'JPEG', margin + sideW + gap, bottomY, sideW, bottomH);
+      doc.rect(margin + sideW + gap, bottomY, sideW, bottomH);
+    }
+
+    function drawInternalWallPDF(doc, iwall, wallNum) {
+      const pageW = 297, pageH = 210, marginX = 15, top = 35, bottom = 20;
+      
+      // Title
+      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
+      doc.text(`INTERNAL WALL ${wallNum} \u2014 ELEVATION`, marginX, 18);
+      
+      // Spec info
+      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.text(`Length: ${iwall.length.toFixed(2)}m   Section: ${iwall.section}mm   Orientation: ${iwall.orientation}   Studs @ 600mm centres`, marginX, 25);
+      
+      const wallLengthMm = Math.round(iwall.length * 1000);
+      const wallHeightMm = 2740; // standard height
+      
+      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
+      const scale = Math.min(drawW / wallLengthMm, drawH / wallHeightMm) * 0.85;
+      const originX = marginX + (drawW - wallLengthMm * scale) / 2;
+      const originY = top + drawH - 10;
+      const toX = x => originX + x * scale;
+      const toY = y => originY - y * scale;
+
+      // Draw framing
+      doc.setDrawColor(40); doc.setLineWidth(0.7);
+      doc.line(toX(0), toY(0), toX(wallLengthMm), toY(0)); // sole plate
+      doc.line(toX(0), toY(wallHeightMm), toX(wallLengthMm), toY(wallHeightMm)); // top plate
+      doc.line(toX(0), toY(0), toX(0), toY(wallHeightMm));
+      doc.line(toX(wallLengthMm), toY(0), toX(wallLengthMm), toY(wallHeightMm));
+
+      // Draw studs
+      const studSpacing = 600;
+      for (let x = 0; x <= wallLengthMm; x += studSpacing) {
+        doc.setLineWidth(0.3);
+        doc.setDrawColor(60);
+        doc.line(toX(x), toY(0), toX(x), toY(wallHeightMm));
+      }
+
+      // Draw openings
+      doc.setDrawColor(16, 150, 90); doc.setLineWidth(0.6);
+      iwall.openings.forEach(o => {
+        const opWidthMm = Math.round(o.width * 1000);
+        const opHeightMm = Math.round(o.height * 1000);
+        const opXMm = Math.round(o.x * 1000);
+        const opLeft = opXMm - opWidthMm / 2;
+        const opRight = opXMm + opWidthMm / 2;
+        const opSillMm = 300; // standard sill height
+        const opTopMm = opSillMm + opHeightMm;
+        
+        doc.rect(toX(opLeft), toY(opTopMm), (opRight - opLeft) * scale, (opTopMm - opSillMm) * scale);
+        doc.setFontSize(7); doc.setTextColor(16, 150, 90); doc.setFont(undefined, 'bold');
+        doc.text(`Opening ${o.type}`, toX(opXMm), toY(opTopMm) - 3, { align: 'center' });
+      });
+      
+      // Dimension lines
+      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
+      doc.setFontSize(7); doc.setFont(undefined, 'normal');
+      
+      // Bottom dimension
+      const dimY = originY + 12;
+      doc.line(toX(0), originY + 6, toX(0), dimY);
+      doc.line(toX(0), dimY, toX(wallLengthMm), dimY);
+      doc.line(toX(wallLengthMm), originY + 6, toX(wallLengthMm), dimY);
+      doc.text(`${iwall.length.toFixed(2)}m`, toX(wallLengthMm / 2), dimY + 4, { align: 'center' });
+      
+      // Height dimension
+      const leftDimX = originX - 8;
+      doc.line(originX - 3, toY(0), leftDimX, toY(0));
+      doc.line(leftDimX, toY(0), leftDimX, toY(wallHeightMm));
+      doc.line(originX - 3, toY(wallHeightMm), leftDimX, toY(wallHeightMm));
+      doc.text(`${(wallHeightMm / 1000).toFixed(2)}m`, leftDimX - 3, toY(wallHeightMm / 2) + 1, { align: 'right' });
+      
       doc.setTextColor(0);
-
-      const pageW = 297;
-      const margin = 15;
-      const gap = 6;
-      const bigW = pageW - margin * 2;
-      const bigH = bigW * 0.5;
-      const bigY = 32;
-
-      // Large isometric/3D view on top
-      doc.addImage(shots['3d'], 'JPEG', margin, bigY, bigW, bigH);
-      doc.setDrawColor(210); doc.rect(margin, bigY, bigW, bigH);
-
-      // Front + top views side by side beneath
-      const smallY = bigY + bigH + gap;
-      const smallW = (bigW - gap) / 2;
-      const smallH = smallW * 0.5;
-
-      doc.setFontSize(8); doc.setTextColor(130);
-      doc.text('Front Elevation View', margin, smallY - 1.5);
-      doc.text('Top / Plan View', margin + smallW + gap, smallY - 1.5);
-
-      doc.addImage(shots['front'], 'JPEG', margin, smallY, smallW, smallH);
-      doc.rect(margin, smallY, smallW, smallH);
-
-      doc.addImage(shots['top'], 'JPEG', margin + smallW + gap, smallY, smallW, smallH);
-      doc.rect(margin + smallW + gap, smallY, smallW, smallH);
     }
 
     function buildProductionPackPDF(customer, shots) {
@@ -2416,38 +2966,77 @@
       const cutData = generateCuttingList();
 
       // Cover / spec page
-      doc.setFontSize(20); doc.text('Garden Studio \u2014 Production Pack', 15, 20);
-      doc.setFontSize(10); doc.setTextColor(110);
-      doc.text(`Generated ${new Date().toLocaleString('en-GB')}`, 15, 27);
-      doc.setTextColor(0); doc.setFontSize(11);
-      let y = 40;
-      const line = (label, val) => {
-        doc.setFont(undefined, 'bold'); doc.text(label, 15, y);
-        doc.setFont(undefined, 'normal'); doc.text(String(val), 75, y);
-        y += 7;
-      };
-      line('Customer:', customer.name || '-');
-      line('Email:', customer.email || '-');
-      line('Phone:', customer.phone || '-');
-      y += 3;
-      line('Building Size (external):', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
-      line('Overall Height:', `${config.height.toFixed(2)}m`);
-      line('Roof Type:', config.roofType === 'flat' ? 'Mono-pitch / Flat' : 'Apex Dual Pitch');
-      line('Roof Pitch:', `${config.roofPitch}\u00b0`);
-      line('Cladding:', config.cladding);
-      line('Frame Timber:', `Studs ${STUD_SECTION} \u00b7 Floor/Roof Joists ${FLOOR_JOIST_SECTION}`);
-      line('Stud Centres:', `${STUD_SPACING_MM}mm (doubled at doors & openings \u2265${DOUBLE_STUD_MIN_WIDTH_MM}mm)`);
-      y += 3;
-      doc.setFont(undefined, 'bold'); doc.text('Glazing / Openings:', 15, y); doc.setFont(undefined, 'normal'); y += 6;
-      config.openings.forEach(o => { doc.text(`- ${getOpeningTitle(o.type)}  (${o.wall} wall)`, 20, y); y += 5.5; });
-      y += 3;
-      doc.setFont(undefined, 'bold'); doc.text('Estimated Quote:', 15, y);
+      const pageW = 297, pageH = 210;
+      
+      // Header bar
+      doc.setFillColor(40, 40, 40);
+      doc.rect(0, 0, pageW, 30, 'F');
+      doc.setFontSize(24); doc.setTextColor(255);
+      doc.setFont(undefined, 'bold');
+      doc.text('GARDEN STUDIO', 15, 20);
       doc.setFont(undefined, 'normal');
+      doc.setFontSize(10); doc.setTextColor(200);
+      doc.text('Production Pack & Cutting Schedule', 15, 27);
+      
+      // Customer section
+      let y = 45;
+      doc.setFontSize(10); doc.setTextColor(40);
+      
+      const section = (title, yOffset) => {
+        doc.setFont(undefined, 'bold');
+        doc.setFillColor(220, 220, 220);
+        doc.rect(15, yOffset - 3, 267, 7, 'F');
+        doc.text(title, 17, yOffset + 1);
+        doc.setFont(undefined, 'normal');
+        return yOffset + 10;
+      };
+      
+      const field = (label, value, yPos) => {
+        doc.setFont(undefined, 'bold'); doc.setFontSize(9);
+        doc.text(label + ':', 17, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.text(String(value), 80, yPos);
+        return yPos + 6.5;
+      };
+      
+      y = section('CUSTOMER INFORMATION', y);
+      y = field('Name', customer.name || '-', y);
+      y = field('Email', customer.email || '-', y);
+      y = field('Phone', customer.phone || '-', y);
+      
+      y += 4;
+      y = section('BUILDING SPECIFICATION', y);
+      y = field('External Size', `${config.width.toFixed(2)}m (W) x ${config.depth.toFixed(2)}m (D)`, y);
+      y = field('Overall Height', `${config.height.toFixed(2)}m`, y);
+      y = field('Roof Type', config.roofType === 'flat' ? 'Mono-pitch (Flat)' : 'Apex Dual Pitch', y);
+      y = field('Roof Pitch', `${config.roofPitch}\u00b0`, y);
+      y = field('Cladding', config.cladding, y);
+      y = field('Frame Members', `Studs: ${STUD_SECTION}  |  Joists: ${FLOOR_JOIST_SECTION}`, y);
+      y = field('Stud Centres', `${STUD_SPACING_MM}mm (doubled at doors & large openings)`, y);
+      
+      y += 4;
+      y = section('GLAZING & OPENINGS', y);
+      config.openings.forEach(o => {
+        y = field(getOpeningTitle(o.type), o.wall + ' wall', y);
+      });
+      
+      y += 4;
+      doc.setFont(undefined, 'bold');
+      doc.setFillColor(40, 100, 150);
+      doc.rect(15, y - 3, 267, 7, 'F');
+      doc.setTextColor(255);
+      doc.text('ESTIMATED QUOTE:', 17, y + 1);
       const priceEl = document.getElementById('price-total');
-      doc.text(priceEl ? priceEl.innerText : '-', 75, y);
-      y += 10;
-      doc.setFontSize(8); doc.setTextColor(130);
-      doc.text('This is a simplified as-designed shop schedule generated from the online configurator. Verify header/lintel spans over 1.2m with a structural engineer before cutting.', 15, y, { maxWidth: 260 });
+      doc.setFontSize(10);
+      doc.text(priceEl ? priceEl.innerText : '-', 260, y + 1, { align: 'right' });
+      
+      y += 12;
+      doc.setFontSize(7.5); doc.setTextColor(120); doc.setFont(undefined, 'normal');
+      doc.text('NOTE: This is an as-designed production schedule generated from the online configurator. Verify all header/lintel spans and structural requirements with an engineer before fabrication.', 15, y, { maxWidth: 270 });
+      
+      y += 8;
+      doc.setTextColor(150);
+      doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, 15, y);
 
       // 3D model reference page
       if (shots) {
@@ -2489,6 +3078,14 @@
       drawFloorPlanPDF(doc, cutData.floor);
       doc.addPage();
       drawRoofFramingPDF(doc, cutData.roof);
+
+      // Add internal walls pages
+      if (cutData.internalWalls && cutData.internalWalls.length > 0) {
+        cutData.internalWalls.forEach((iwall, idx) => {
+          doc.addPage();
+          drawInternalWallPDF(doc, iwall, idx + 1);
+        });
+      }
 
       return doc;
     }
@@ -2648,6 +3245,24 @@
       document.getElementById('val-overhang').innerText = config.overhang.toFixed(2) + ' m';
       build3DRoom();
     });
+
+    // L-Shape listeners
+    const lshapeWidthInput = document.getElementById('input-lshape-width');
+    const lshapeDepthInput = document.getElementById('input-lshape-depth');
+    if (lshapeWidthInput) {
+      lshapeWidthInput.addEventListener('input', (e) => {
+        config.lShapeWidth = parseFloat(e.target.value);
+        document.getElementById('val-lshape-width').innerText = config.lShapeWidth.toFixed(2) + ' m';
+        build3DRoom();
+      });
+    }
+    if (lshapeDepthInput) {
+      lshapeDepthInput.addEventListener('input', (e) => {
+        config.lShapeDepth = parseFloat(e.target.value);
+        document.getElementById('val-lshape-depth').innerText = config.lShapeDepth.toFixed(2) + ' m';
+        build3DRoom();
+      });
+    }
 
     document.getElementById('sun-slider').addEventListener('input', (e) => {
       const angle = parseFloat(e.target.value);
