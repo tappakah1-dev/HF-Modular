@@ -1,6 +1,8 @@
-"dependencies": {
-    "next": "14.0.0",
-    "react": "18.0.0",
-    "resend": "^3.0.0",
-    "other-packages": "..."
+{
+  "name": "hf-modular",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "resend": "^3.0.0"
+  }
 }
