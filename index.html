@@ -728,7 +728,7 @@
       frameColor: '#18181b',
       showDimensions: true,
       showFurniture: true,
-      targetWall: 'front',
+      targetWall: 'front', // Wall to add new glazing onto
       openings: [
         { id: '1', type: 'bifold-240', wall: 'front', x: 0 },
         { id: '2', type: 'window-high-120', wall: 'right', x: 0.8, y: 1.95 }
@@ -2086,7 +2086,7 @@
         activeRoofBtn.classList.add('border-emerald-500', 'bg-emerald-500/10');
       }
       updatePitchControl('flat');
-      
+
       setTargetWall('front');
       renderPlacedOpeningsList();
       build3DRoom();
@@ -2247,83 +2247,21 @@
 
     // ---------- PDF drawing helpers ----------
     function pdfCuttingTablePage(doc, title, rows) {
-      const pageW = 297, pageH = 210;
-      const margin = 12;
-      
-      // Header with title
-      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
-      doc.text(title, margin, 18);
-      
-      // Subtitle with date
-      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
-      doc.text(`Generated ${new Date().toLocaleDateString('en-GB')}`, margin, 24);
-      
-      // Table setup
-      const colX = [margin, 85, 150, 205];
-      const headerY = 30;
-      const rowH = 6.5;
-      
-      // Draw header background
-      doc.setFillColor(220, 220, 220);
-      doc.rect(colX[0], headerY - 4, pageW - margin * 2, rowH + 1, 'F');
-      
-      // Header text
-      doc.setFont(undefined, 'bold');
+      doc.setFontSize(14); doc.setTextColor(0); doc.text(title, 15, 18);
       doc.setFontSize(9);
-      doc.setTextColor(0);
-      doc.text('Item / Member', colX[0] + 2, headerY + 1.5);
-      doc.text('Position (mm)', colX[1] + 2, headerY + 1.5);
-      doc.text('Length (mm)', colX[2] + 2, headerY + 1.5);
-      doc.text('Section', colX[3] + 2, headerY + 1.5);
-      
-      // Draw header bottom line
-      doc.setDrawColor(100);
-      doc.setLineWidth(0.5);
-      doc.line(margin, headerY + 3.5, pageW - margin, headerY + 3.5);
-      
-      let y = headerY + rowH + 1;
-      let rowCount = 0;
-      
+      let y = 28;
+      const row = (a, b, c, dd) => {
+        doc.text(String(a), 15, y);
+        doc.text(String(b), 105, y);
+        doc.text(String(c), 150, y);
+        doc.text(String(dd), 195, y);
+        y += 5.5;
+        if (y > 195) { doc.addPage(); y = 20; }
+      };
+      doc.setFont(undefined, 'bold');
+      row('Item', 'Position (mm)', 'Length (mm)', 'Section');
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(8.5);
-      
-      rows.forEach((r, idx) => {
-        if (y > pageH - 15) {
-          doc.addPage();
-          // Repeat header on new page
-          doc.setFillColor(220, 220, 220);
-          doc.rect(colX[0], 16, pageW - margin * 2, rowH + 1, 'F');
-          doc.setFont(undefined, 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(0);
-          doc.text('Item / Member', colX[0] + 2, 18.5);
-          doc.text('Position (mm)', colX[1] + 2, 18.5);
-          doc.text('Length (mm)', colX[2] + 2, 18.5);
-          doc.text('Section', colX[3] + 2, 18.5);
-          doc.setDrawColor(100);
-          doc.setLineWidth(0.5);
-          doc.line(margin, 22.5, pageW - margin, 22.5);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(8.5);
-          y = 28;
-          rowCount = 0;
-        }
-        
-        // Alternate row shading
-        if (rowCount % 2 === 1) {
-          doc.setFillColor(245, 245, 245);
-          doc.rect(colX[0], y - 5, pageW - margin * 2, rowH, 'F');
-        }
-        
-        doc.setTextColor(0);
-        doc.text(String(r[0]), colX[0] + 2, y);
-        doc.text(String(r[1] === '-' ? '-' : r[1]), colX[1] + 2, y);
-        doc.text(String(r[2]), colX[2] + 2, y);
-        doc.text(String(r[3]), colX[3] + 2, y);
-        
-        y += rowH;
-        rowCount++;
-      });
+      rows.forEach(r => row(r[0], r[1], r[2], r[3]));
     }
 
     function wallCuttingRows(wd) {
@@ -2337,221 +2275,139 @@
     }
 
     function drawWallElevationPDF(doc, wallName, wd, wallLengthMm) {
-      const pageW = 297, pageH = 210, marginX = 15, marginY = 15, top = 35, bottom = 20;
-      
-      // Title
-      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
-      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, marginX, 18);
-      
-      // Spec info
-      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
-      doc.text(`Length: ${(wallLengthMm / 1000).toFixed(2)}m   |   Studs @ ${STUD_SPACING_MM}mm centres (${STUD_SECTION})`, marginX, 25);
-      
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      doc.text(`Length: ${wallLengthMm}mm   Studs @ ${STUD_SPACING_MM}mm centres   ${STUD_SECTION}`, 15, 25);
+      doc.setTextColor(0);
+
       const maxHeightMm = Math.max(wd.leftTopMm, wd.rightTopMm, 2400);
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.85;
+      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.9;
       const originX = marginX + (drawW - wallLengthMm * scale) / 2;
-      const originY = top + drawH - 10;
+      const originY = top + drawH;
       const toX = x => originX + x * scale;
       const toY = y => originY - y * scale;
 
       const leftTopStud = Math.round(wd.leftTopMm - PLATE_ALLOW_MM);
       const rightTopStud = Math.round(wd.rightTopMm - PLATE_ALLOW_MM);
 
-      // Draw main framing
-      doc.setDrawColor(40); doc.setLineWidth(0.7);
+      doc.setDrawColor(40); doc.setLineWidth(0.5);
       doc.line(toX(0), toY(0), toX(wallLengthMm), toY(0)); // sole plate
-      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate
+      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate (sloped if applicable)
       doc.line(toX(0), toY(0), toX(0), toY(leftTopStud));
       doc.line(toX(wallLengthMm), toY(0), toX(wallLengthMm), toY(rightTopStud));
 
-      // Draw studs
       wd.studs.forEach(s => {
-        doc.setLineWidth(s.doubled ? 0.8 : 0.3);
-        doc.setDrawColor(s.doubled ? 20 : 80);
+        doc.setLineWidth(s.doubled ? 1.1 : 0.4);
         doc.line(toX(s.x_mm), toY(0), toX(s.x_mm), toY(s.length_mm));
       });
 
-      // Draw openings
       doc.setDrawColor(16, 150, 90); doc.setLineWidth(0.6);
       wd.openings.forEach(o => {
         doc.rect(toX(o.left), toY(o.headYMm), (o.right - o.left) * scale, (o.headYMm - o.sillYMm) * scale);
-        doc.setFontSize(7); doc.setTextColor(16, 150, 90); doc.setFont(undefined, 'bold');
-        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 3, { align: 'center', maxWidth: 20 });
+        doc.setFontSize(7); doc.setTextColor(16, 150, 90);
+        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 2, { align: 'center' });
       });
-      
-      // Dimension lines
-      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
-      doc.setFontSize(7);
-      
-      // Bottom dimension
-      const dimY = originY + 12;
-      doc.line(toX(0), originY + 6, toX(0), dimY);
-      doc.line(toX(0), dimY, toX(wallLengthMm), dimY);
-      doc.line(toX(wallLengthMm), originY + 6, toX(wallLengthMm), dimY);
-      doc.text(`${(wallLengthMm / 1000).toFixed(2)}m`, toX(wallLengthMm / 2), dimY + 4, { align: 'center' });
-      
-      // Height dimension
-      const leftDimX = originX - 8;
-      doc.line(originX - 3, toY(0), leftDimX, toY(0));
-      doc.line(leftDimX, toY(0), leftDimX, toY(leftTopStud));
-      doc.line(originX - 3, toY(leftTopStud), leftDimX, toY(leftTopStud));
-      doc.text(`${(leftTopStud / 1000).toFixed(2)}m`, leftDimX - 3, toY(leftTopStud / 2) + 1, { align: 'right' });
-      
-      doc.setTextColor(0);
+      doc.setDrawColor(40); doc.setTextColor(0);
+
+      doc.setFontSize(8);
+      doc.text('0', toX(0), toY(0) + 6);
+      doc.text(`${wallLengthMm}mm`, toX(wallLengthMm), toY(0) + 6, { align: 'right' });
     }
 
     function drawFloorPlanPDF(doc, floorData) {
-      const pageW = 297, pageH = 210, marginX = 15, top = 35, bottom = 20;
-      
-      // Title
-      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
-      doc.text('FLOOR \u2014 JOIST PLAN', marginX, 18);
-      
-      // Spec info
-      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
-      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   Spanning ${(floorData.depthMm / 1000).toFixed(2)}m`, marginX, 25);
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text('FLOOR \u2014 JOIST PLAN', 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, spanning ${floorData.depthMm}mm`, 15, 25);
+      doc.setTextColor(0);
 
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.85;
+      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.9;
       const originX = marginX + (drawW - floorData.widthMm * scale) / 2;
       const originY = top + (drawH - floorData.depthMm * scale) / 2;
       const toX = x => originX + x * scale;
-      const toY = y => originY + y * scale;
 
-      // Draw floor outline
-      doc.setDrawColor(40); doc.setLineWidth(0.8);
+      doc.setDrawColor(40); doc.setLineWidth(0.6);
       doc.rect(originX, originY, floorData.widthMm * scale, floorData.depthMm * scale);
-      
-      // Draw joists
-      doc.setLineWidth(0.3); doc.setDrawColor(60);
+      doc.setLineWidth(0.3);
       floorData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + floorData.depthMm * scale));
 
-      // Dimensions
-      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
-      doc.setFontSize(7); doc.setFont(undefined, 'normal');
-      
-      // Width dimension
-      const dimYBelow = originY + floorData.depthMm * scale + 6;
-      doc.line(originX, originY + floorData.depthMm * scale, originX, dimYBelow - 2);
-      doc.line(originX, dimYBelow, toX(floorData.widthMm), dimYBelow);
-      doc.line(toX(floorData.widthMm), originY + floorData.depthMm * scale, toX(floorData.widthMm), dimYBelow - 2);
-      doc.text(`${(floorData.widthMm / 1000).toFixed(2)}m`, originX + floorData.widthMm * scale / 2, dimYBelow + 4, { align: 'center' });
-      
-      // Depth dimension
-      const dimXLeft = originX - 8;
-      doc.line(originX - 3, originY, dimXLeft, originY);
-      doc.line(dimXLeft, originY, dimXLeft, toY(floorData.depthMm));
-      doc.line(originX - 3, toY(floorData.depthMm), dimXLeft, toY(floorData.depthMm));
-      doc.text(`${(floorData.depthMm / 1000).toFixed(2)}m`, dimXLeft - 3, originY + floorData.depthMm * scale / 2 + 1, { align: 'right' });
-      
-      doc.setTextColor(0);
+      doc.setFontSize(8);
+      doc.text(`${floorData.widthMm}mm`, originX + floorData.widthMm * scale / 2, originY - 4, { align: 'center' });
     }
 
     function drawRoofFramingPDF(doc, roofData) {
-      const pageW = 297, pageH = 210, marginX = 15, top = 35, bottom = 20;
-      
-      // Title
-      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
-      doc.text('ROOF \u2014 FRAMING PLAN', marginX, 18);
-      
-      // Spec info
-      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text('ROOF \u2014 FRAMING PLAN', 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
       if (roofData.type === 'mono') {
-        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, marginX, 25);
+        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, 15, 25);
       } else {
-        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres (${FLOOR_JOIST_SECTION})   ${roofData.pitchDeg}\u00b0 dual pitch   Ridge front-to-back`, marginX, 25);
+        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 dual pitch, ridge runs front-to-back`, 15, 25);
       }
+      doc.setTextColor(0);
 
+      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
       const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.85;
+      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.9;
       const originX = marginX + (drawW - roofData.widthMm * scale) / 2;
       const originY = top + (drawH - roofData.depthMm * scale) / 2;
       const toX = x => originX + x * scale;
       const toY = y => originY + y * scale;
 
-      // Draw outline
-      doc.setDrawColor(40); doc.setLineWidth(0.8);
+      doc.setDrawColor(40); doc.setLineWidth(0.6);
       doc.rect(originX, originY, roofData.widthMm * scale, roofData.depthMm * scale);
-      
-      // Draw framing members
-      doc.setLineWidth(0.3); doc.setDrawColor(60);
+      doc.setLineWidth(0.3);
 
       if (roofData.type === 'mono') {
         roofData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + roofData.depthMm * scale));
       } else {
-        // Ridge line (thicker)
-        doc.setLineWidth(0.7); doc.setDrawColor(20);
+        doc.setLineWidth(0.7);
         doc.line(originX + roofData.widthMm * scale / 2, originY, originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale);
-        // Trusses
-        doc.setLineWidth(0.3); doc.setDrawColor(60);
+        doc.setLineWidth(0.3);
         roofData.trusses.forEach(t => doc.line(originX, toY(t.x_mm), originX + roofData.widthMm * scale, toY(t.x_mm)));
       }
-      
-      // Labels
-      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
-      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 3, { align: 'center' });
-      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 6, { align: 'center' });
-      
-      // Dimensions
-      doc.setFont(undefined, 'normal'); doc.setFontSize(7);
-      doc.setDrawColor(100); doc.setLineWidth(0.3); doc.setTextColor(60);
-      
-      // Width dimension
-      const dimYBelow = originY + roofData.depthMm * scale + 6;
-      doc.line(originX, originY + roofData.depthMm * scale, originX, dimYBelow - 2);
-      doc.line(originX, dimYBelow, toX(roofData.widthMm), dimYBelow);
-      doc.line(toX(roofData.widthMm), originY + roofData.depthMm * scale, toX(roofData.widthMm), dimYBelow - 2);
-      doc.text(`${(roofData.widthMm / 1000).toFixed(2)}m`, originX + roofData.widthMm * scale / 2, dimYBelow + 4, { align: 'center' });
-      
-      doc.setTextColor(0);
+      doc.setFontSize(8);
+      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 4, { align: 'center' });
+      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 8, { align: 'center' });
     }
 
     function pdf3DModelPage(doc, shots) {
-      const pageW = 297, pageH = 210;
-      const margin = 12;
-      const gap = 4;
-      
-      // Title
-      doc.setFontSize(16); doc.setTextColor(40); doc.setFont(undefined, 'bold');
-      doc.text('3D MODEL \u2014 VISUAL REFERENCE', margin, 18);
-      
-      // Subtitle
-      doc.setFontSize(8); doc.setTextColor(100); doc.setFont(undefined, 'normal');
-      doc.text('Renders generated from the online configurator at time of order.', margin, 24);
-
-      const drawW = pageW - margin * 2;
-      const availH = pageH - 30;
-      
-      // 3-view layout: 3D on top, Front and Top side by side below
-      const topH = availH * 0.5;
-      const bottomH = availH * 0.48;
-      const sideW = (drawW - gap) / 2;
-      
-      // 3D isometric view (full width on top)
-      doc.setDrawColor(180); doc.setLineWidth(0.5);
-      doc.addImage(shots['3d'], 'JPEG', margin, 28, drawW, topH);
-      doc.rect(margin, 28, drawW, topH);
-      
-      // Front and Top views below
-      const bottomY = 28 + topH + gap;
-      
-      // Front Elevation
-      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
-      doc.text('Front Elevation', margin, bottomY - 2);
-      doc.setFont(undefined, 'normal');
-      doc.addImage(shots['front'], 'JPEG', margin, bottomY, sideW, bottomH);
-      doc.rect(margin, bottomY, sideW, bottomH);
-      
-      // Top / Plan View
-      doc.setFontSize(8); doc.setTextColor(80); doc.setFont(undefined, 'bold');
-      doc.text('Top / Plan View', margin + sideW + gap, bottomY - 2);
-      doc.setFont(undefined, 'normal');
-      doc.addImage(shots['top'], 'JPEG', margin + sideW + gap, bottomY, sideW, bottomH);
-      doc.rect(margin + sideW + gap, bottomY, sideW, bottomH);
-    }
-
+      doc.setFontSize(14); doc.setTextColor(0);
+      doc.text('3D MODEL \u2014 VISUAL REFERENCE', 15, 18);
+      doc.setFontSize(9); doc.setTextColor(110);
+      doc.text('Renders generated directly from the online configurator at time of order.', 15, 25);
       doc.setTextColor(0);
+
+      const pageW = 297;
+      const margin = 15;
+      const gap = 6;
+      const bigW = pageW - margin * 2;
+      const bigH = bigW * 0.5;
+      const bigY = 32;
+
+      // Large isometric/3D view on top
+      doc.addImage(shots['3d'], 'JPEG', margin, bigY, bigW, bigH);
+      doc.setDrawColor(210); doc.rect(margin, bigY, bigW, bigH);
+
+      // Front + top views side by side beneath
+      const smallY = bigY + bigH + gap;
+      const smallW = (bigW - gap) / 2;
+      const smallH = smallW * 0.5;
+
+      doc.setFontSize(8); doc.setTextColor(130);
+      doc.text('Front Elevation View', margin, smallY - 1.5);
+      doc.text('Top / Plan View', margin + smallW + gap, smallY - 1.5);
+
+      doc.addImage(shots['front'], 'JPEG', margin, smallY, smallW, smallH);
+      doc.rect(margin, smallY, smallW, smallH);
+
+      doc.addImage(shots['top'], 'JPEG', margin + smallW + gap, smallY, smallW, smallH);
+      doc.rect(margin + smallW + gap, smallY, smallW, smallH);
     }
 
     function buildProductionPackPDF(customer, shots) {
@@ -2560,77 +2416,38 @@
       const cutData = generateCuttingList();
 
       // Cover / spec page
-      const pageW = 297, pageH = 210;
-      
-      // Header bar
-      doc.setFillColor(40, 40, 40);
-      doc.rect(0, 0, pageW, 30, 'F');
-      doc.setFontSize(24); doc.setTextColor(255);
-      doc.setFont(undefined, 'bold');
-      doc.text('GARDEN STUDIO', 15, 20);
+      doc.setFontSize(20); doc.text('Garden Studio \u2014 Production Pack', 15, 20);
+      doc.setFontSize(10); doc.setTextColor(110);
+      doc.text(`Generated ${new Date().toLocaleString('en-GB')}`, 15, 27);
+      doc.setTextColor(0); doc.setFontSize(11);
+      let y = 40;
+      const line = (label, val) => {
+        doc.setFont(undefined, 'bold'); doc.text(label, 15, y);
+        doc.setFont(undefined, 'normal'); doc.text(String(val), 75, y);
+        y += 7;
+      };
+      line('Customer:', customer.name || '-');
+      line('Email:', customer.email || '-');
+      line('Phone:', customer.phone || '-');
+      y += 3;
+      line('Building Size (external):', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
+      line('Overall Height:', `${config.height.toFixed(2)}m`);
+      line('Roof Type:', config.roofType === 'flat' ? 'Mono-pitch / Flat' : 'Apex Dual Pitch');
+      line('Roof Pitch:', `${config.roofPitch}\u00b0`);
+      line('Cladding:', config.cladding);
+      line('Frame Timber:', `Studs ${STUD_SECTION} \u00b7 Floor/Roof Joists ${FLOOR_JOIST_SECTION}`);
+      line('Stud Centres:', `${STUD_SPACING_MM}mm (doubled at doors & openings \u2265${DOUBLE_STUD_MIN_WIDTH_MM}mm)`);
+      y += 3;
+      doc.setFont(undefined, 'bold'); doc.text('Glazing / Openings:', 15, y); doc.setFont(undefined, 'normal'); y += 6;
+      config.openings.forEach(o => { doc.text(`- ${getOpeningTitle(o.type)}  (${o.wall} wall)`, 20, y); y += 5.5; });
+      y += 3;
+      doc.setFont(undefined, 'bold'); doc.text('Estimated Quote:', 15, y);
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(10); doc.setTextColor(200);
-      doc.text('Production Pack & Cutting Schedule', 15, 27);
-      
-      // Customer section
-      let y = 45;
-      doc.setFontSize(10); doc.setTextColor(40);
-      
-      const section = (title, yOffset) => {
-        doc.setFont(undefined, 'bold');
-        doc.setFillColor(220, 220, 220);
-        doc.rect(15, yOffset - 3, 267, 7, 'F');
-        doc.text(title, 17, yOffset + 1);
-        doc.setFont(undefined, 'normal');
-        return yOffset + 10;
-      };
-      
-      const field = (label, value, yPos) => {
-        doc.setFont(undefined, 'bold'); doc.setFontSize(9);
-        doc.text(label + ':', 17, yPos);
-        doc.setFont(undefined, 'normal');
-        doc.text(String(value), 80, yPos);
-        return yPos + 6.5;
-      };
-      
-      y = section('CUSTOMER INFORMATION', y);
-      y = field('Name', customer.name || '-', y);
-      y = field('Email', customer.email || '-', y);
-      y = field('Phone', customer.phone || '-', y);
-      
-      y += 4;
-      y = section('BUILDING SPECIFICATION', y);
-      y = field('External Size', `${config.width.toFixed(2)}m (W) x ${config.depth.toFixed(2)}m (D)`, y);
-      y = field('Overall Height', `${config.height.toFixed(2)}m`, y);
-      y = field('Roof Type', config.roofType === 'flat' ? 'Mono-pitch (Flat)' : 'Apex Dual Pitch', y);
-      y = field('Roof Pitch', `${config.roofPitch}\u00b0`, y);
-      y = field('Cladding', config.cladding, y);
-      y = field('Frame Members', `Studs: ${STUD_SECTION}  |  Joists: ${FLOOR_JOIST_SECTION}`, y);
-      y = field('Stud Centres', `${STUD_SPACING_MM}mm (doubled at doors & large openings)`, y);
-      
-      y += 4;
-      y = section('GLAZING & OPENINGS', y);
-      config.openings.forEach(o => {
-        y = field(getOpeningTitle(o.type), o.wall + ' wall', y);
-      });
-      
-      y += 4;
-      doc.setFont(undefined, 'bold');
-      doc.setFillColor(40, 100, 150);
-      doc.rect(15, y - 3, 267, 7, 'F');
-      doc.setTextColor(255);
-      doc.text('ESTIMATED QUOTE:', 17, y + 1);
       const priceEl = document.getElementById('price-total');
-      doc.setFontSize(10);
-      doc.text(priceEl ? priceEl.innerText : '-', 260, y + 1, { align: 'right' });
-      
-      y += 12;
-      doc.setFontSize(7.5); doc.setTextColor(120); doc.setFont(undefined, 'normal');
-      doc.text('NOTE: This is an as-designed production schedule generated from the online configurator. Verify all header/lintel spans and structural requirements with an engineer before fabrication.', 15, y, { maxWidth: 270 });
-      
-      y += 8;
-      doc.setTextColor(150);
-      doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, 15, y);
+      doc.text(priceEl ? priceEl.innerText : '-', 75, y);
+      y += 10;
+      doc.setFontSize(8); doc.setTextColor(130);
+      doc.text('This is a simplified as-designed shop schedule generated from the online configurator. Verify header/lintel spans over 1.2m with a structural engineer before cutting.', 15, y, { maxWidth: 260 });
 
       // 3D model reference page
       if (shots) {
@@ -2718,7 +2535,7 @@
 
         // Use FormData + fetch for reliable file attachment
         const formData = new FormData();
-        formData.append('_subject', `New Garden Studio Order Request — ${name}`);
+        formData.append('_subject', `New Garden Studio Order Request \u2014 ${name}`);
         formData.append('_captcha', 'false');
         formData.append('_template', 'box');
         formData.append('name', name);
@@ -2728,7 +2545,7 @@
         formData.append('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
         formData.append('cladding', config.cladding);
         formData.append('estimated_quote', document.getElementById('price-total').innerText);
-        formData.append('message', 'Production pack PDF attached below.');
+        formData.append('message', 'Production pack PDF attached.');
         
         // Add PDF file
         formData.append('attachment', new File([pdfBlob], 'garden-studio-quote.pdf', { type: 'application/pdf' }));
@@ -2768,16 +2585,24 @@
     // If we're arriving back from a FormSubmit redirect after a successful
     // submission, reopen the modal straight to the success state.
     function checkPendingQuoteSubmission() {
-      const justSubmitted = sessionStorage.getItem('quoteSubmitted') === 'true';
+      const justSubmitted = sessionStorage.getItem('quoteJustSubmitted') === '1'
+        || new URLSearchParams(window.location.search).get('quote_sent') === '1';
 
       if (!justSubmitted) return;
 
-      sessionStorage.removeItem('quoteSubmitted');
+      sessionStorage.removeItem('quoteJustSubmitted');
 
       document.getElementById('quote-modal').classList.remove('hidden');
       document.getElementById('quote-form-state').classList.add('hidden');
       document.getElementById('quote-error-msg').classList.add('hidden');
       document.getElementById('quote-success-state').classList.remove('hidden');
+
+      // Clean the ?quote_sent=1 param out of the URL without reloading.
+      if (window.history && window.history.replaceState) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('quote_sent');
+        window.history.replaceState({}, '', url.toString());
+      }
     }
 
     document.getElementById('input-width').addEventListener('input', (e) => {
