@@ -2713,55 +2713,52 @@
         const shots = capture3DSnapshots();
         const doc = buildProductionPackPDF({ name, email, phone }, shots);
         const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'garden-studio-quote.pdf', { type: 'application/pdf' });
 
         label.textContent = 'Sending...';
 
-        // Flag submission so we can show success on return
-        sessionStorage.setItem('quoteSubmitted', 'true');
+        // Use FormData + fetch for reliable file attachment
+        const formData = new FormData();
+        formData.append('_subject', `New Garden Studio Order Request — ${name}`);
+        formData.append('_captcha', 'false');
+        formData.append('_template', 'box');
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('phone', phone || '-');
+        formData.append('building_size', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
+        formData.append('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
+        formData.append('cladding', config.cladding);
+        formData.append('estimated_quote', document.getElementById('price-total').innerText);
+        formData.append('message', 'Production pack PDF attached below.');
+        
+        // Add PDF file
+        formData.append('attachment', new File([pdfBlob], 'garden-studio-quote.pdf', { type: 'application/pdf' }));
 
-        const form = document.createElement('form');
-        form.action = 'https://formsubmit.co/tappakah1@gmail.com';
-        form.method = 'POST';
-        form.enctype = 'multipart/form-data';
-        form.style.display = 'none';
+        // Send via fetch
+        fetch('https://formsubmit.co/ajax/tappakah1@gmail.com', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (response.ok) {
+            // Show success
+            document.getElementById('quote-form-state').classList.add('hidden');
+            document.getElementById('quote-error-msg').classList.add('hidden');
+            document.getElementById('quote-success-state').classList.remove('hidden');
+            label.textContent = 'Submitted!';
+          } else {
+            throw new Error('Submission failed');
+          }
+        })
+        .catch(err => {
+          console.error('Error:', err);
+          errEl.textContent = 'Error sending quote. Please try again.';
+          errEl.classList.remove('hidden');
+          btn.disabled = false;
+          label.textContent = 'Submit Order Request';
+        });
 
-        const addField = (fieldName, value) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = fieldName;
-          input.value = value;
-          form.appendChild(input);
-        };
-
-        addField('_subject', `New Garden Studio Order Request \u2014 ${name}`);
-        addField('_captcha', 'false');
-        addField('_template', 'box');
-        addField('_next', window.location.href);
-        addField('name', name);
-        addField('email', email);
-        addField('phone', phone || '-');
-        addField('building_size', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
-        addField('roof_type', config.roofType === 'flat' ? 'Mono-pitch' : 'Apex Dual Pitch');
-        addField('cladding', config.cladding);
-        addField('estimated_quote', document.getElementById('price-total').innerText);
-
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.name = 'attachment';
-        fileInput.style.display = 'none';
-
-        const dt = new DataTransfer();
-        dt.items.add(pdfFile);
-        fileInput.files = dt.files;
-        form.appendChild(fileInput);
-
-        document.body.appendChild(form);
-        form.submit();
-        // Page navigates away here; nothing after this line runs.
       } catch (err) {
-        sessionStorage.removeItem('quoteSubmitted');
-        errEl.textContent = "Couldn't send automatically \u2014 please email tappakah1@gmail.com directly and we'll sort your quote.";
+        errEl.textContent = "Couldn't build quote. Please try again.";
         errEl.classList.remove('hidden');
         btn.disabled = false;
         label.textContent = 'Submit Order Request';
