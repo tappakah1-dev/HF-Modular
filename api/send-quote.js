@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     // Send email with Resend
     const response = await resend.emails.send({
-      from: 'noreply@gardenstudio.co.uk', // Change to your domain or Resend default
+      from: 'onboarding@resend.dev', // Change to your domain or Resend default
       to: 'tappakah1@gmail.com',
       replyTo: email,
       subject: `New Garden Studio Order Request — ${name}`,
