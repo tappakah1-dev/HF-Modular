@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>jsPDF rotation calibration</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<script>
+// Draws rotated (angle 90, align center) texts at known positions with a
+// crosshair marking the requested anchor, so pixel measurement can map
+// requested (x, y) -> rendered glyph box.
+window.__calib = function () {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const cases = [
+    [40, 80, 'TEST'],
+    [40, 120, 'ABCDEFGHIJKL'],
+    [100, 80, '1234'],
+    [100, 120, '2583 WALL HT'],
+    [160, 100, '3500 OVERALL DEPTH'],
+    [220, 60, '2804 OVERALL'],
+    [220, 150, '2400 BACK HT'],
+    [260, 100, 'XX']
+  ];
+  cases.forEach(([x, y, s]) => {
+    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.15);
+    doc.line(x - 2, y, x + 2, y);
+    doc.line(x, y - 2, x, y + 2);
+    doc.setTextColor(220, 30, 30);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(6);
+    doc.text(s, x, y, { angle: 90, align: 'center' });
+  });
+  return doc.output('datauristring').split(',')[1];
+};
+</script>
+</body>
+</html>

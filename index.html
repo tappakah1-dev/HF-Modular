@@ -18,6 +18,9 @@
   <!-- jsPDF (used server-side of the browser to build the internal production pack that gets emailed to us - not exposed to the client) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+  <!-- Editable pricing configuration (timber £/m³, materials, labour, margin) -->
+  <script src="pricing.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
@@ -162,7 +165,7 @@
               <div class="font-semibold text-xs text-zinc-100">Natural Western Red Cedar</div>
               <div class="text-[11px] text-zinc-400">Vertical slatted architectural planks</div>
             </div>
-            <span class="text-xs text-emerald-400 font-bold">+£0</span>
+            <span class="text-xs text-emerald-400 font-bold" id="clad-price-cedar">+£0</span>
           </button>
 
           <button onclick="setCladding('oak')" id="clad-oak" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
@@ -171,7 +174,7 @@
               <div class="font-semibold text-xs text-zinc-100">Warm Honey Oak Cladding</div>
               <div class="text-[11px] text-zinc-400">Premium treated vertical timber</div>
             </div>
-            <span class="text-xs text-zinc-400">+£12/m²</span>
+            <span class="text-xs text-zinc-400" id="clad-price-oak">+£12/m²</span>
           </button>
 
           <button onclick="setCladding('composite')" id="clad-composite" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
@@ -180,7 +183,7 @@
               <div class="font-semibold text-xs text-zinc-100">Anthracite Composite Slats</div>
               <div class="text-[11px] text-zinc-400">Zero-maintenance charcoal composite</div>
             </div>
-            <span class="text-xs text-zinc-400">+£35/m²</span>
+            <span class="text-xs text-zinc-400" id="clad-price-composite">+£35/m²</span>
           </button>
 
           <button onclick="setCladding('render')" id="clad-render" class="clad-btn p-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 flex items-center space-x-3 text-left transition">
@@ -189,7 +192,7 @@
               <div class="font-semibold text-xs text-zinc-100">Crisp White Silicone Render</div>
               <div class="text-[11px] text-zinc-400">Smooth modern monochrome exterior</div>
             </div>
-            <span class="text-xs text-zinc-400">+£25/m²</span>
+            <span class="text-xs text-zinc-400" id="clad-price-render">+£25/m²</span>
           </button>
         </div>
 
@@ -461,6 +464,11 @@
       <button onclick="openQuoteModal()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/20 active:scale-[0.99] cursor-pointer">
         <i class="fa-solid fa-paper-plane"></i>
         <span class="text-xs">Get Your Quote &amp; Order</span>
+      </button>
+
+      <!-- Dev-only: shown when the page is opened with ?dev=1 -->
+      <button id="dev-pdf-btn" onclick="devDownloadPack()" class="hidden w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl transition cursor-pointer text-xs">
+        <i class="fa-solid fa-file-pdf"></i> DEV: Download Production Pack
       </button>
     </div>
 
@@ -1833,38 +1841,151 @@
       });
     }
 
-    function calculatePrice() {
-      const area = config.width * config.depth;
-      let basePrice = area * 750;
+    // ============================================================
+    // QUOTE ENGINE
+    // Costs the structural cutting list (studs, plates, headers,
+    // joists, trusses...) against the editable pricing config in
+    // pricing.js. Timber is priced by volume: linear metres ×
+    // section area × £/m³ (+ waste). Everything else by area or
+    // per unit, then labour + margin on top.
+    // ============================================================
 
-      if (config.cladding === 'oak') basePrice += area * 12;
-      else if (config.cladding === 'composite') basePrice += area * 35;
-      else if (config.cladding === 'render') basePrice += area * 25;
+    function sectionVolumeCubicM(sizeStr) {
+      // "72 x 35mm" -> volume in m³ of one linear metre of that section
+      const nums = String(sizeStr).match(/\d+(?:\.\d+)?/g);
+      if (!nums || nums.length < 2) return 0.0025;
+      return (parseFloat(nums[0]) * parseFloat(nums[1])) / 1e9;
+    }
 
-      config.openings.forEach(op => {
-        switch(op.type) {
-          case 'bifold-180': basePrice += 1850; break;
-          case 'bifold-240': basePrice += 2100; break;
-          case 'bifold-wide': basePrice += 2450; break;
-          case 'bifold-360': basePrice += 3100; break;
-          case 'sliding-180': basePrice += 1550; break;
-          case 'sliding-210': basePrice += 1750; break;
-          case 'sliding-240': basePrice += 1950; break;
-          case 'french-150': basePrice += 1280; break;
-          case 'french-180': basePrice += 1420; break;
-          case 'single-door': basePrice += 780; break;
-          case 'window-high-120': basePrice += 480; break;
-          case 'window-high-180': basePrice += 580; break;
-          case 'window-casement-60': basePrice += 390; break;
-          case 'window-casement-120': basePrice += 510; break;
-          case 'window-tall-60': basePrice += 490; break;
-          case 'window-tall-80': basePrice += 590; break;
-          default: basePrice += 500;
-        }
+    function buildBillOfMaterials() {
+      const cut = generateCuttingList();
+      const items = [];
+
+      cut.walls.forEach(wd => {
+        items.push({ desc: 'Sole plate', lm: wd.bottomPlate.length_mm / 1000, sec: 'stud' });
+        wd.topPlates.forEach(tp => items.push({ desc: 'Top plate (2 off, doubled)', lm: (2 * tp.length_mm) / 1000, sec: 'stud' }));
+        wd.studs.forEach(s => items.push({ desc: s.role, lm: s.length_mm / 1000, sec: 'stud' }));
+        wd.cripples.forEach(c => items.push({ desc: c.role, lm: c.length_mm / 1000, sec: 'stud' }));
+        wd.headers.forEach(hh => items.push({ desc: hh.role, lm: ((hh.double ? 2 : 1) * hh.length_mm) / 1000, sec: 'stud' }));
+        wd.sills.forEach(sl => items.push({ desc: sl.role, lm: sl.length_mm / 1000, sec: 'stud' }));
       });
 
-      if (config.hasDecking) basePrice += config.width * 1.2 * 120;
-      if (config.hasHeating) basePrice += area * 45;
+      cut.floor.rimJoistsLong.forEach(r => items.push({ desc: r.role, lm: (r.qty * r.length_mm) / 1000, sec: 'joist' }));
+      cut.floor.rimJoistsShort.forEach(r => items.push({ desc: r.role, lm: (r.qty * r.length_mm) / 1000, sec: 'joist' }));
+      cut.floor.joists.forEach(j => items.push({ desc: j.role, lm: j.length_mm / 1000, sec: 'joist' }));
+
+      if (cut.roof.type === 'mono') {
+        cut.roof.joists.forEach(j => items.push({ desc: j.role, lm: j.length_mm / 1000, sec: 'joist' }));
+      } else {
+        items.push({ desc: 'Ridge board', lm: cut.roof.ridgeLen_mm / 1000, sec: 'joist' });
+        cut.roof.trusses.forEach(t => {
+          items.push({ desc: t.role + ' — rafter (2 off)', lm: (2 * t.rafterLen_mm) / 1000, sec: 'joist' });
+          items.push({ desc: t.role + ' — ceiling tie', lm: t.tieLen_mm / 1000, sec: 'joist' });
+        });
+      }
+      return items;
+    }
+
+    function wallAreas() {
+      const w = config.width, d = config.depth, h = config.height;
+      const monoActive = config.roofType === 'flat';
+      const pitchRad = monoActive ? (config.roofPitch || 0) * Math.PI / 180 : 0;
+      const monoRise = monoActive ? d * Math.tan(pitchRad) : 0;
+      const frontH = h + monoRise, backH = h;
+      const gross = w * frontH + w * backH + 2 * (d * (frontH + backH) / 2);
+      const openingsArea = config.openings.reduce((s, o) => s + getOpeningWidth(o.type) * getOpeningHeight(o.type), 0);
+      return { gross, net: Math.max(0, gross - openingsArea), openingsArea, frontH, backH };
+    }
+
+    function roofDeckArea() {
+      const w = config.width, d = config.depth, h = config.height, overhang = config.overhang;
+      if (config.roofType === 'flat') {
+        const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+        const frontH = h + d * Math.tan(pitchRad), backH = h;
+        const monoD = d + overhang * 2;
+        const frontTipY = frontH + 0.2 + overhang * Math.tan(pitchRad);
+        const backTipY = backH + 0.2 - overhang * Math.tan(pitchRad);
+        const deckLen = Math.sqrt(monoD * monoD + Math.pow(frontTipY - backTipY, 2));
+        return deckLen * (w + overhang * 2);
+      }
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+      const run = w / 2 + overhang;
+      const ridgeY = h + (w / 2) * Math.tan(pitchRad);
+      const eaveTipY = h - overhang * Math.tan(pitchRad);
+      const slabLen = Math.sqrt(run * run + Math.pow(ridgeY - eaveTipY, 2));
+      return 2 * slabLen * (d + overhang * 1.5);
+    }
+
+    function computeQuote() {
+      const P0 = window.PRICING || {};
+      const area = config.width * config.depth;
+      const timberCfg = P0.timber || {};
+      const studCfg = timberCfg.stud || { size: '72 x 35mm', grade: 'C16', pricePerCbm: 0 };
+      const joistCfg = timberCfg.joist || { size: '97 x 35mm', grade: 'C16', pricePerCbm: 0 };
+      const studVol = sectionVolumeCubicM(studCfg.size);
+      const joistVol = sectionVolumeCubicM(joistCfg.size);
+      const waste = 1 + ((P0.wastePct || 0) / 100);
+      const marginPct = P0.marginPct || 0;
+      const r0 = n => (n == null ? 0 : n);
+
+      const bom = buildBillOfMaterials();
+      let studLm = 0, joistLm = 0;
+      bom.forEach(i => { if (i.sec === 'stud') studLm += i.lm; else joistLm += i.lm; });
+
+      const wA = wallAreas();
+      const roofA = roofDeckArea();
+
+      const lines = [];
+      const add = (label, qty, unit, rate, amount) => lines.push({ label, qty: String(qty), unit, rate, amount });
+
+      add(`Timber ${studCfg.size} ${studCfg.grade} studwork (incl. ${P0.wastePct || 0}% waste)`,
+        studLm.toFixed(1), 'lm', studCfg.pricePerCbm, studLm * studVol * studCfg.pricePerCbm * waste);
+      add(`Timber ${joistCfg.size} ${joistCfg.grade} joists (incl. ${P0.wastePct || 0}% waste)`,
+        joistLm.toFixed(1), 'lm', joistCfg.pricePerCbm, joistLm * joistVol * joistCfg.pricePerCbm * waste);
+
+      const cladRate = r0(P0.cladding && P0.cladding[config.cladding]);
+      add('Exterior cladding', wA.net.toFixed(1), 'm²', cladRate, wA.net * cladRate);
+      add('Wall sheathing 11mm OSB', wA.net.toFixed(1), 'm²', r0(P0.wallSheathing), wA.net * r0(P0.wallSheathing));
+      add('Wall insulation 70mm PIR', wA.net.toFixed(1), 'm²', r0(P0.wallInsulation), wA.net * r0(P0.wallInsulation));
+      add('Internal wall lining', wA.net.toFixed(1), 'm²', r0(P0.wallLining), wA.net * r0(P0.wallLining));
+
+      config.openings.forEach(o => {
+        const rate = r0(P0.openings && P0.openings[o.type]);
+        add(getOpeningTitle(o.type) + ` (${o.wall} wall)`, 1, 'unit', rate, rate);
+      });
+
+      add('Roof deck 18mm OSB', roofA.toFixed(1), 'm²', r0(P0.roofDeck), roofA * r0(P0.roofDeck));
+      add('Roof covering (single-ply)', roofA.toFixed(1), 'm²', r0(P0.roofCovering), roofA * r0(P0.roofCovering));
+      add('Roof insulation 100mm PIR', roofA.toFixed(1), 'm²', r0(P0.roofInsulation), roofA * r0(P0.roofInsulation));
+      add('Floor deck 22mm T&G', area.toFixed(1), 'm²', r0(P0.floorDeck), area * r0(P0.floorDeck));
+      add('Floor insulation 100mm PIR', area.toFixed(1), 'm²', r0(P0.floorInsulation), area * r0(P0.floorInsulation));
+
+      if (config.hasDecking) {
+        const deckArea = (config.width + 0.2) * 1.2;
+        add('Front decking platform', deckArea.toFixed(1), 'm²', r0(P0.deckingPerSqm), deckArea * r0(P0.deckingPerSqm));
+      }
+      if (config.hasHeating) {
+        add('Underfloor heating (electric foil)', area.toFixed(1), 'm²', r0(P0.heatingPerSqm), area * r0(P0.heatingPerSqm));
+      }
+      add('Sundries & fixings allowance', area.toFixed(1), 'm²', r0(P0.sundriesPerSqm), area * r0(P0.sundriesPerSqm));
+
+      const materials = lines.reduce((s, l) => s + l.amount, 0);
+      const labour = area * r0(P0.labourPerSqm);
+      const subtotal = materials + labour;
+      const margin = subtotal * marginPct / 100;
+      const total = subtotal + margin;
+      const perSqm = area > 0 ? total / area : 0;
+
+      window.__lastQuote = {
+        lines, materials, labour, subtotal, margin, marginPct, total, perSqm, area,
+        studLm, joistLm, wallNetArea: wA.net, roofArea: roofA
+      };
+      return window.__lastQuote;
+    }
+
+    function calculatePrice() {
+      const q = computeQuote();
+      const area = config.width * config.depth;
 
       const totalEl = document.getElementById('price-total');
       const sqmEl = document.getElementById('price-sqm');
@@ -1874,8 +1995,8 @@
       const modalClad = document.getElementById('modal-clad');
       const modalPrice = document.getElementById('modal-price');
 
-      const formattedTotal = '£' + Math.round(basePrice).toLocaleString();
-      const formattedSqm = '£' + Math.round(basePrice / area).toLocaleString() + ' / m²';
+      const formattedTotal = '£' + Math.round(q.total).toLocaleString();
+      const formattedSqm = '£' + Math.round(q.perSqm).toLocaleString() + ' / m²';
 
       if (totalEl) totalEl.innerText = formattedTotal;
       if (sqmEl) sqmEl.innerText = formattedSqm;
@@ -1884,6 +2005,18 @@
       if (modalSize) modalSize.innerText = `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`;
       if (modalClad) modalClad.innerText = config.cladding.toUpperCase();
       if (modalPrice) modalPrice.innerText = formattedTotal;
+    }
+
+    function syncCladdingPriceLabels() {
+      const P0 = window.PRICING || {};
+      if (!P0.cladding) return;
+      const base = P0.cladding.cedar || 0;
+      ['cedar', 'oak', 'composite', 'render'].forEach(key => {
+        const el = document.getElementById(`clad-price-${key}`);
+        if (!el) return;
+        const delta = (P0.cladding[key] || 0) - base;
+        el.innerText = '+£' + delta.toLocaleString() + '/m²';
+      });
     }
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -2043,7 +2176,11 @@
       views.forEach(v => {
         setCameraView(v);
         renderer.render(scene, camera);
-        shots[v] = renderer.domElement.toDataURL('image/jpeg', 0.85);
+        shots[v] = {
+          data: renderer.domElement.toDataURL('image/jpeg', 0.85),
+          w: renderer.domElement.width,
+          h: renderer.domElement.height
+        };
       });
 
       // Restore original view
@@ -2097,8 +2234,8 @@
     // never downloaded by the client; generated at submit time and
     // emailed to the business).
     // ============================================================
-    const STUD_SECTION = '72x44mm C16';        // matches 70mm insulation depth
-    const FLOOR_JOIST_SECTION = '97x44mm C16'; // matches 100mm insulation depth
+    const STUD_SECTION = '72x35mm C16';        // matches 70mm insulation depth
+    const FLOOR_JOIST_SECTION = '97x35mm C16'; // matches 100mm insulation depth
     const STUD_SPACING_MM = 600;
     const DOUBLE_STUD_MIN_WIDTH_MM = 900; // "big" openings get doubled trimmer studs
     const PLATE_ALLOW_MM = 100; // top + bottom plate thickness deducted from stud lengths
@@ -2156,16 +2293,29 @@
         studs.push({ x_mm: Math.round(x), length_mm: Math.round(mm(heightAt(uM)) - PLATE_ALLOW_MM), role: 'Common Stud', doubled: false });
       });
 
-      const headers = [], sills = [];
+      const headers = [], sills = [], cripples = [];
       openings.forEach(o => {
-        const trimmerLen = Math.round(o.headYMm - 50);
+        // king studs run FULL HEIGHT (sole plate to top plate)
         const count = o.double ? 2 : 1;
         [o.left, o.right].forEach(xPos => {
+          const uM = (xPos - Lmm / 2) / 1000;
+          const fullLen = Math.round(mm(heightAt(uM)) - PLATE_ALLOW_MM);
           for (let i = 0; i < count; i++) {
-            studs.push({ x_mm: Math.round(xPos), length_mm: trimmerLen, role: (o.double ? 'Doubled Trimmer Stud' : 'Jamb Stud') + ' - ' + o.label, doubled: o.double });
+            studs.push({ x_mm: Math.round(xPos), length_mm: fullLen, role: (o.double ? 'Doubled King Stud' : 'Jamb Stud') + ' - ' + o.label, doubled: o.double });
           }
         });
-        headers.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm + 200, role: (o.double ? 'Doubled ' : '') + 'Header/Lintel - ' + o.label });
+        // cripple studs over the header at regular centres
+        studXs.filter(x => x > o.left + 15 && x < o.right - 15).forEach(x => {
+          const uM = (x - Lmm / 2) / 1000;
+          cripples.push({
+            x_mm: Math.round(x),
+            length_mm: Math.round(mm(heightAt(uM)) + 150 - o.headYMm),
+            topMm: Math.round(mm(heightAt(uM)) - 50),
+            role: 'Cripple Stud - ' + o.label, doubled: false
+          });
+        });
+        // header spans between the king studs
+        headers.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm, role: (o.double ? 'Doubled ' : '') + 'Header/Lintel - ' + o.label, double: o.double });
         if (!o.isDoor) {
           sills.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm, role: 'Sill - ' + o.label });
         }
@@ -2177,7 +2327,7 @@
 
       return {
         name: wallName, lengthMm: Lmm, leftTopMm, rightTopMm,
-        studs, headers, sills, openings,
+        studs, headers, sills, cripples, openings,
         bottomPlate: { length_mm: Lmm, role: 'Sole Plate' },
         topPlates: [{ length_mm: topPlateLenMm, role: 'Top Plate (x2, doubled)' }]
       };
@@ -2245,250 +2395,1123 @@
       return { walls, floor, roof };
     }
 
-    // ---------- PDF drawing helpers ----------
-    function pdfCuttingTablePage(doc, title, rows) {
-      doc.setFontSize(14); doc.setTextColor(0); doc.text(title, 15, 18);
-      doc.setFontSize(9);
-      let y = 28;
-      const row = (a, b, c, dd) => {
-        doc.text(String(a), 15, y);
-        doc.text(String(b), 105, y);
-        doc.text(String(c), 150, y);
-        doc.text(String(dd), 195, y);
-        y += 5.5;
-        if (y > 195) { doc.addPage(); y = 20; }
-      };
-      doc.setFont(undefined, 'bold');
-      row('Item', 'Position (mm)', 'Length (mm)', 'Section');
-      doc.setFont(undefined, 'normal');
-      rows.forEach(r => row(r[0], r[1], r[2], r[3]));
+    // ============================================================
+    // PDF ENGINE — professional production pack layout
+    // Every page: Haldane Fisher header band, footer with ref/date/
+    // page numbers. Drawings carry full dimension chains in mm.
+    // ============================================================
+
+    const PDFC = {
+      pageW: 297, pageH: 210, mx: 15,
+      ink: [24, 24, 27],
+      sub: [113, 113, 122],
+      faint: [161, 161, 170],
+      emerald: [5, 150, 105],
+      emeraldDark: [4, 120, 84],
+      grid: [212, 212, 216],
+      zebra: [246, 246, 247],
+      // colour-coded drawing palette (matches production drawing style)
+      wood: [242, 228, 174],        // timber members — warm cream fill
+      woodOutline: [90, 70, 40],    // timber member outline — dark brown
+      glass: [212, 230, 248],       // glazing — light blue fill
+      concrete: [216, 216, 216],    // plinth / masonry — light grey
+      dimRed: [200, 24, 24]         // dimension lines & labels — red
+    };
+    const BRAND = 'HALDANE FISHER — MODULAR';
+    const PACK_NAME = 'Garden Studio Production Pack';
+
+    function sectionLabel(sec) {
+      return String(sec).replace('x', ' × ');
     }
 
-    function wallCuttingRows(wd) {
+    function pdfHeader(doc, title, sub) {
+      doc.setFillColor(...PDFC.ink); doc.rect(0, 0, PDFC.pageW, 14.5, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+      doc.text(BRAND, PDFC.mx, 6);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...PDFC.faint);
+      doc.text(PACK_NAME, PDFC.mx, 10.6);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
+      doc.text(title, PDFC.pageW - PDFC.mx, 6, { align: 'right' });
+      if (sub) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...PDFC.faint);
+        doc.text(sub, PDFC.pageW - PDFC.mx, 10.6, { align: 'right' });
+      }
+      doc.setDrawColor(...PDFC.emerald); doc.setLineWidth(0.9);
+      doc.line(0, 14.9, PDFC.pageW, 14.9);
+    }
+
+    function pdfFooter(doc, ctx) {
+      doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.2);
+      doc.line(PDFC.mx, PDFC.pageH - 8.5, PDFC.pageW - PDFC.mx, PDFC.pageH - 8.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.sub);
+      doc.text(`Ref ${ctx.ref}   ·   Generated ${ctx.dateStr}`, PDFC.mx, PDFC.pageH - 5.2);
+      doc.text('All dimensions in millimetres unless stated otherwise', PDFC.pageW / 2, PDFC.pageH - 5.2, { align: 'center' });
+      doc.text(`Page ${doc.internal.getNumberOfPages()} of X`, PDFC.pageW - PDFC.mx, PDFC.pageH - 5.2, { align: 'right' });
+    }
+
+    function pdfNewPage(doc, ctx, title, sub) {
+      doc.addPage();
+      pdfHeader(doc, title, sub);
+      pdfFooter(doc, ctx);
+      return 20;
+    }
+
+    // Professional table: dark header band, zebra rows, grid lines,
+    // optional column alignment, auto page-break with repeated header.
+    function pdfTable(doc, ctx, opts) {
+      const { x, y, colWidths, headers, rows, rowH = 5.6, fontSize = 6.6, newPageCb } = opts;
+      let curY = y;
+      const totalW = colWidths.reduce((a, b) => a + b, 0);
+
+      const drawHeader = (yy) => {
+        doc.setFillColor(...PDFC.ink);
+        doc.rect(x, yy - 3.6, totalW, rowH, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(fontSize);
+        let cx = x;
+        headers.forEach((h, i) => {
+          doc.text(h.t, cx + (h.a === 'right' ? colWidths[i] - 1.5 : 1.5), yy + 0.5, { align: h.a === 'right' ? 'right' : 'left' });
+          cx += colWidths[i];
+        });
+        doc.setFont('helvetica', 'normal');
+      };
+
+      drawHeader(curY);
+      curY += rowH;
+
+      rows.forEach((row, rIdx) => {
+        if (curY + rowH > PDFC.pageH - 14) {
+          if (newPageCb) newPageCb(doc); else doc.addPage();
+          curY = 20;
+          drawHeader(curY);
+          curY += rowH;
+        }
+        if (rIdx % 2 === 1) {
+          doc.setFillColor(...PDFC.zebra);
+          doc.rect(x, curY - 3.6, totalW, rowH, 'F');
+        }
+        doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.15);
+        doc.rect(x, curY - 3.6, totalW, rowH);
+        doc.setTextColor(...PDFC.ink);
+        doc.setFontSize(fontSize);
+        let cx = x;
+        row.forEach((cell, i) => {
+          const c = typeof cell === 'object' ? cell : { t: cell };
+          if (c.b) doc.setFont('helvetica', 'bold'); else doc.setFont('helvetica', 'normal');
+          const align = c.a || 'left';
+          doc.text(String(c.t == null ? '' : c.t), cx + (align === 'right' ? colWidths[i] - 1.5 : 1.5), curY + 0.5, { align });
+          cx += colWidths[i];
+        });
+        curY += rowH;
+      });
+      doc.setFont('helvetica', 'normal');
+
+      // column separators
+      let cx = x;
+      doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.15);
+      colWidths.forEach((cw, i) => {
+        if (i < colWidths.length - 1) { cx += cw; doc.line(cx, y - 3.6, cx, curY - 3.6); }
+      });
+      return curY;
+    }
+
+    // ============================================================
+    // ARCHITECTURAL DRAFTING HELPERS
+    // Hatching, architectural dimension lines (extension lines +
+    // 45° tick marks), drawing-sheet pages with frame + title block.
+    // ============================================================
+
+    // Liang-Barsky: clip a line segment to a rectangle (returns null if outside).
+    function clipSeg(x1, y1, x2, y2, rx, ry, rw, rh) {
+      let t0 = 0, t1 = 1;
+      const dx = x2 - x1, dy = y2 - y1;
+      const p = [-dx, dx, -dy, dy];
+      const q = [x1 - rx, rx + rw - x1, y1 - ry, ry + rh - y1];
+      for (let i = 0; i < 4; i++) {
+        if (p[i] === 0) { if (q[i] < 0) return null; }
+        else {
+          const t = q[i] / p[i];
+          if (p[i] < 0) { if (t > t1) return null; if (t > t0) t0 = t; }
+          else { if (t < t0) return null; if (t < t1) t1 = t; }
+        }
+      }
+      return [x1 + t0 * dx, y1 + t0 * dy, x1 + t1 * dx, y1 + t1 * dy];
+    }
+
+    // 45° diagonal hatching clipped to a rectangle.
+    function hatchRect(doc, x, y, w, h, spacing = 2.4, col = PDFC.sub, lw = 0.1) {
+      if (w <= 0 || h <= 0) return;
+      doc.setDrawColor(...col); doc.setLineWidth(lw);
+      for (let t = -h; t <= w; t += spacing) {
+        const seg = clipSeg(x + t, y + h, x + t + h, y, x, y, w, h);
+        if (seg) doc.line(seg[0], seg[1], seg[2], seg[3]);
+      }
+    }
+
+    function crossHatchRect(doc, x, y, w, h, spacing = 3.2, col = PDFC.sub, lw = 0.1) {
+      hatchRect(doc, x, y, w, h, spacing, col, lw);
+      doc.setDrawColor(...col); doc.setLineWidth(lw);
+      for (let t = -h; t <= w; t += spacing) {
+        const seg = clipSeg(x + t, y, x + t + h, y + h, x, y, w, h);
+        if (seg) doc.line(seg[0], seg[1], seg[2], seg[3]);
+      }
+    }
+
+    // Architectural dimension line: extension lines from the measured
+    // points, main line offset by `off` (negative = above/left), 45°
+    // tick marks, label with white box (optionally rotated 90° for
+    // vertical chains).
+    function pdfArchDim(doc, x1, y1, x2, y2, label, opts = {}) {
+      const horiz = Math.abs(y2 - y1) < 0.01;
+      const len = horiz ? Math.abs(x2 - x1) : Math.abs(y2 - y1);
+      if (len < 8) return;
+      const col = opts.col || PDFC.dimRed;
+      const off = opts.off !== undefined ? opts.off : (horiz ? -4 : 5);
+      const ext = 2.4, gap = 0.6, t = 1.05;
+      const sign = off >= 0 ? 1 : -1;
+      let lx1, ly1, lx2, ly2;
+      if (horiz) { lx1 = x1; ly1 = y1 + off; lx2 = x2; ly2 = y2 + off; }
+      else { lx1 = x1 + off; ly1 = y1; lx2 = x2 + off; ly2 = y2; }
+
+      doc.setDrawColor(...col); doc.setLineWidth(0.15);
+      // extension lines (small gap from the object, overshoot past the dim line)
+      if (horiz) {
+        doc.line(x1, y1 + sign * gap, x1, ly1 + sign * ext);
+        doc.line(x2, y2 + sign * gap, x2, ly2 + sign * ext);
+      } else {
+        doc.line(x1 + sign * gap, y1, lx1 + sign * ext, y1);
+        doc.line(x2 + sign * gap, y2, lx2 + sign * ext, y2);
+      }
+      // main line + 45° tick marks at both ends
+      doc.line(lx1, ly1, lx2, ly2);
+      doc.line(lx1 - t, ly1 - t, lx1 + t, ly1 + t);
+      doc.line(lx2 - t, ly2 - t, lx2 + t, ly2 + t);
+
+      if (label) {
+        const cx = (lx1 + lx2) / 2, cy = (ly1 + ly2) / 2;
+        if (opts.rotate) {
+          pdfDimLabelRotated(doc, cx + sign * 1.6, cy, label);
+        } else {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(6);
+          const tw = doc.getTextWidth(label);
+          const pos = opts.text || (horiz ? (off < 0 ? 'above' : 'below') : (off >= 0 ? 'right' : 'left'));
+          let tx, ty, align = 'center';
+          if (pos === 'above') { tx = cx; ty = cy - 2.2; }
+          else if (pos === 'below') { tx = cx; ty = cy + 3.4; }
+          else if (pos === 'right') { tx = cx + 2.4; ty = cy + 0.4; align = 'left'; }
+          else { tx = cx - 2.4; ty = cy + 0.4; align = 'right'; }
+          doc.setFillColor(255, 255, 255);
+          if (align === 'center') doc.rect(tx - tw / 2 - 1.1, ty - 2.4, tw + 2.2, 3.6, 'F');
+          else if (align === 'left') doc.rect(tx - 1.1, ty - 2.4, tw + 2.2, 3.6, 'F');
+          else doc.rect(tx - tw - 1.1, ty - 2.4, tw + 2.2, 3.6, 'F');
+          doc.setTextColor(...col);
+          doc.text(label, tx, ty, { align });
+        }
+      }
+    }
+
+    // Label rotated 90° (for vertical dimension chains), centered on (x, y).
+    // jsPDF 2.5.1 anchors rotated center-aligned text at the glyph box's
+    // bottom, offset left by (width/2 + ~1.2mm) — measured via calibration
+    // page (dev/calib.html). Compensate so the glyph box centers on (x, y).
+    function pdfDimLabelRotated(doc, x, y, text) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6);
+      const tw = doc.getTextWidth(text);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(x - 1.6, y - tw / 2 - 0.8, 3.2, tw + 1.6, 'F');
+      // dev-measurement mode: window.__devRedLabels=true renders these pure red
+      doc.setTextColor(window.__devRedLabels ? 220 : PDFC.dimRed[0], window.__devRedLabels ? 30 : PDFC.dimRed[1], window.__devRedLabels ? 30 : PDFC.dimRed[2]);
+      doc.text(text, x + tw / 2 + 1.2, y + tw / 2, { angle: 90, align: 'center' });
+    }
+
+    // ---------- drawing sheet pages: frame + notes + title block ----------
+    const NOTES_ELEVATION = [
+      '1. ALL TIMBER C16, FINISHED SIZES AS SHOWN. ALL DIMENSIONS IN MILLIMETRES.',
+      '2. STUDS AT 600mm C/C. DOUBLED KING STUDS FULL HEIGHT AT DOORS AND OPENINGS OVER 900mm WIDE.',
+      '3. CRIPPLE STUDS OVER HEADERS AT 600mm C/C. ALLOW 10% CUTTING WASTE WHEN ORDERING.',
+      '4. HEADERS/LINTELS OVER 1.2m SPAN TO BE CONFIRMED BY A STRUCTURAL ENGINEER.'
+    ];
+    const NOTES_FLOOR = [
+      '1. JOISTS 97 × 35mm C16 AT 600mm C/C, SPANNING FRONT TO BACK.',
+      '2. RIM JOISTS 2 OFF EACH SIDE. DECK 22mm T&G OVER 100mm PIR INSULATION.',
+      '3. ALLOW 10% CUTTING WASTE WHEN ORDERING. ALL DIMENSIONS IN MILLIMETRES.',
+      '4. VERIFY ALL DIMENSIONS ON SITE BEFORE FABRICATION.'
+    ];
+    const NOTES_ROOF = [
+      '1. ROOF JOISTS 97 × 35mm C16 AT 600mm C/C OVER 18mm OSB DECK.',
+      '2. SINGLE-PLY COVERING. FALLS TO BACK AS SHOWN.',
+      '3. ALLOW 10% CUTTING WASTE WHEN ORDERING. ALL DIMENSIONS IN MILLIMETRES.',
+      '4. VERIFY ALL DIMENSIONS ON SITE BEFORE FABRICATION.'
+    ];
+    const NOTES_SECTION = [
+      '1. ALL TIMBER C16, FINISHED SIZES AS SHOWN. ALL DIMENSIONS IN MILLIMETRES.',
+      '2. ROOF DECK 18mm OSB WITH SINGLE-PLY COVERING.',
+      '3. OVERALL HEIGHT TO BE CHECKED AGAINST PERMITTED DEVELOPMENT LIMITS.',
+      '4. VERIFY ALL DIMENSIONS ON SITE BEFORE FABRICATION.'
+    ];
+
+    function pdfSheetPage(doc, ctx, title, notesLines, scaleLabel, scaleVal) {
+      doc.addPage();
+      // double page frame
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.5);
+      doc.rect(5, 5, PDFC.pageW - 10, PDFC.pageH - 10);
+      doc.setLineWidth(0.2);
+      doc.rect(8, 8, PDFC.pageW - 16, PDFC.pageH - 16);
+      // top-left brand, top-right ref
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...PDFC.ink);
+      doc.text(BRAND, 12, 13.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.sub);
+      doc.text(PACK_NAME.toUpperCase(), 12, 17.5);
+      doc.text(`REF ${ctx.ref}   ·   ${ctx.dateStr}`, 285, 13.5, { align: 'right' });
+      // notes block (bottom-left)
+      const nH = notesLines.length * 2.6 + 5.6;
+      const nY = 202 - nH;
+      doc.setFillColor(...PDFC.zebra); doc.rect(12, nY, 170, nH, 'F');
+      doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.25); doc.rect(12, nY, 170, nH);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.ink);
+      doc.text('NOTES', 14.5, nY + 3.4);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5);
+      notesLines.forEach((l, i) => doc.text(l, 14.5, nY + 5.6 + i * 2.6));
+      // title block (bottom-right) + scale bar above it
+      pdfTitleBlock(doc, ctx, title, scaleLabel);
+      if (scaleVal) pdfScaleBar(doc, 189, 175.5, scaleVal);
+    }
+
+    function pdfTitleBlock(doc, ctx, title, scaleLabel) {
+      const x = 189, y = 186, w = 100;
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.35);
+      doc.rect(x, y, w, 16);
+      doc.line(x + 40, y, x + 40, y + 16);
+      doc.line(x + 60, y, x + 60, y + 16);
+      doc.line(x + 80, y, x + 80, y + 16);
+      doc.line(x, y + 7, x + w, y + 7);
+      doc.line(x, y + 11.5, x + w, y + 11.5);
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...PDFC.ink);
+      doc.text(BRAND, x + 2, y + 4.6);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text(PACK_NAME.toUpperCase(), x + 2, y + 6.4);
+
+      doc.text('SCALE', x + 42, y + 3.2);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.ink);
+      doc.text(scaleLabel || 'AS SHOWN', x + 42, y + 5.8);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text('SHEET', x + 62, y + 3.2);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.ink);
+      doc.text(`${doc.internal.getNumberOfPages()} OF Y`, x + 62, y + 5.8);
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(5.8);
+      doc.text(title, x + 2, y + 10);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text('DATE', x + 42, y + 8.6);
+      doc.setTextColor(...PDFC.ink); doc.setFontSize(5);
+      doc.text(ctx.dateShort, x + 42, y + 10.6);
+      doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text('REV', x + 62, y + 8.6);
+      doc.setTextColor(...PDFC.ink); doc.setFontSize(5);
+      doc.text('A', x + 62, y + 10.6);
+
+      doc.setFontSize(5);
+      doc.text(`REF ${ctx.ref}`, x + 2, y + 14);
+      doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text('DRAWN', x + 42, y + 12.6);
+      doc.setTextColor(...PDFC.ink); doc.setFontSize(5);
+      doc.text('CONFIG', x + 42, y + 14.6);
+      doc.setFontSize(4.6); doc.setTextColor(...PDFC.sub);
+      doc.text('CHECKED', x + 62, y + 12.6);
+      doc.text('APPROVED', x + 82, y + 12.6);
+    }
+
+    function pdfScaleBar(doc, x, y, scale) {
+      const m = 1000 * scale; // page mm per metre
+      const total = m <= 62 ? 1 : 0.5;
+      const bw = total * m;
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.25);
+      doc.rect(x, y, bw, 2.2);
+      doc.line(x + bw / 2, y, x + bw / 2, y + 2.2);
+      doc.setFillColor(...PDFC.ink);
+      doc.rect(x, y, bw / 2, 2.2, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(4.6); doc.setTextColor(...PDFC.ink);
+      doc.text('0', x, y + 4.6);
+      doc.text(`${Math.round(total * 500)}`, x + bw / 2, y + 4.6, { align: 'center' });
+      doc.text(`${total}m`, x + bw, y + 4.6, { align: 'right' });
+    }
+
+    // Cutting rows: { d: description, p: position, l: length mm, s: section, q: qty }
+    function wallCutRows(wd) {
       const rows = [];
-      rows.push([wd.bottomPlate.role, '0', wd.bottomPlate.length_mm, STUD_SECTION]);
-      wd.topPlates.forEach(tp => rows.push([tp.role, '0', tp.length_mm, STUD_SECTION]));
-      wd.studs.slice().sort((a, b) => a.x_mm - b.x_mm).forEach(s => rows.push([s.role, s.x_mm, s.length_mm, STUD_SECTION]));
-      wd.headers.forEach(hh => rows.push([hh.role, hh.x_mm, hh.length_mm, STUD_SECTION + ' (doubled)']));
-      wd.sills.forEach(sl => rows.push([sl.role, sl.x_mm, sl.length_mm, STUD_SECTION]));
+      rows.push({ d: 'Sole plate', p: '0–' + wd.lengthMm, l: wd.bottomPlate.length_mm, s: STUD_SECTION, q: 1 });
+      wd.topPlates.forEach(tp => rows.push({ d: 'Top plate (doubled)', p: '0–' + Math.round(tp.length_mm), l: tp.length_mm, s: STUD_SECTION, q: 2 }));
+      wd.studs.slice().sort((a, b) => a.x_mm - b.x_mm).forEach(s => rows.push({ d: s.role, p: s.x_mm, l: s.length_mm, s: STUD_SECTION, q: 1 }));
+      wd.cripples.slice().sort((a, b) => a.x_mm - b.x_mm).forEach(c => rows.push({ d: c.role, p: c.x_mm, l: c.length_mm, s: STUD_SECTION, q: 1 }));
+      wd.headers.forEach(hh => rows.push({ d: hh.role, p: hh.x_mm, l: hh.length_mm, s: STUD_SECTION, q: hh.double ? 2 : 1 }));
+      wd.sills.forEach(sl => rows.push({ d: sl.role, p: sl.x_mm, l: sl.length_mm, s: STUD_SECTION, q: 1 }));
       return rows;
     }
 
-    function drawWallElevationPDF(doc, wallName, wd, wallLengthMm) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text(`${wallName.toUpperCase()} WALL \u2014 ELEVATION`, 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text(`Length: ${wallLengthMm}mm   Studs @ ${STUD_SPACING_MM}mm centres   ${STUD_SECTION}`, 15, 25);
-      doc.setTextColor(0);
-
-      const maxHeightMm = Math.max(wd.leftTopMm, wd.rightTopMm, 2400);
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
-      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / wallLengthMm, drawH / maxHeightMm) * 0.9;
-      const originX = marginX + (drawW - wallLengthMm * scale) / 2;
-      const originY = top + drawH;
-      const toX = x => originX + x * scale;
-      const toY = y => originY - y * scale;
-
-      const leftTopStud = Math.round(wd.leftTopMm - PLATE_ALLOW_MM);
-      const rightTopStud = Math.round(wd.rightTopMm - PLATE_ALLOW_MM);
-
-      doc.setDrawColor(40); doc.setLineWidth(0.5);
-      doc.line(toX(0), toY(0), toX(wallLengthMm), toY(0)); // sole plate
-      doc.line(toX(0), toY(leftTopStud), toX(wallLengthMm), toY(rightTopStud)); // top plate (sloped if applicable)
-      doc.line(toX(0), toY(0), toX(0), toY(leftTopStud));
-      doc.line(toX(wallLengthMm), toY(0), toX(wallLengthMm), toY(rightTopStud));
-
-      wd.studs.forEach(s => {
-        doc.setLineWidth(s.doubled ? 1.1 : 0.4);
-        doc.line(toX(s.x_mm), toY(0), toX(s.x_mm), toY(s.length_mm));
+    // Group identical (description + length) pieces, sorted longest first.
+    function groupCutRows(rows) {
+      const map = new Map();
+      rows.forEach(r => {
+        const key = r.d + '|' + r.l + '|' + r.s;
+        if (!map.has(key)) map.set(key, { d: r.d, l: r.l, s: r.s, q: 0, positions: [] });
+        const g = map.get(key);
+        g.q += r.q;
+        g.positions.push(r.p);
       });
-
-      doc.setDrawColor(16, 150, 90); doc.setLineWidth(0.6);
-      wd.openings.forEach(o => {
-        doc.rect(toX(o.left), toY(o.headYMm), (o.right - o.left) * scale, (o.headYMm - o.sillYMm) * scale);
-        doc.setFontSize(7); doc.setTextColor(16, 150, 90);
-        doc.text(o.label, toX(o.centerMm), toY(o.headYMm) - 2, { align: 'center' });
-      });
-      doc.setDrawColor(40); doc.setTextColor(0);
-
-      doc.setFontSize(8);
-      doc.text('0', toX(0), toY(0) + 6);
-      doc.text(`${wallLengthMm}mm`, toX(wallLengthMm), toY(0) + 6, { align: 'right' });
+      const groups = [...map.values()];
+      groups.sort((a, b) => b.l - a.l);
+      return groups;
     }
 
-    function drawFloorPlanPDF(doc, floorData) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('FLOOR \u2014 JOIST PLAN', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text(`Joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, spanning ${floorData.depthMm}mm`, 15, 25);
-      doc.setTextColor(0);
-
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
-      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / floorData.widthMm, drawH / floorData.depthMm) * 0.9;
-      const originX = marginX + (drawW - floorData.widthMm * scale) / 2;
-      const originY = top + (drawH - floorData.depthMm * scale) / 2;
-      const toX = x => originX + x * scale;
-
-      doc.setDrawColor(40); doc.setLineWidth(0.6);
-      doc.rect(originX, originY, floorData.widthMm * scale, floorData.depthMm * scale);
-      doc.setLineWidth(0.3);
-      floorData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + floorData.depthMm * scale));
-
-      doc.setFontSize(8);
-      doc.text(`${floorData.widthMm}mm`, originX + floorData.widthMm * scale / 2, originY - 4, { align: 'center' });
+    function cuttingListPage(doc, ctx, title, sub, rawRows) {
+      pdfNewPage(doc, ctx, title, sub);
+      const groups = groupCutRows(rawRows);
+      const cols = [10, 120, 42, 30, 12, 53];
+      const rows = groups.map((g, i) => {
+        let pos = '-';
+        if (g.positions.length === 1) pos = String(g.positions[0]);
+        else if (g.positions.length <= 4) pos = g.positions.join(', ');
+        else pos = g.positions.slice(0, 3).join(', ') + ' … +' + (g.positions.length - 3);
+        if (pos.length > 26) pos = g.positions.length + ' positions';
+        return [
+          { t: i + 1, a: 'right' },
+          { t: g.d },
+          { t: pos, a: 'right' },
+          { t: g.l, a: 'right' },
+          { t: g.q, a: 'right' },
+          { t: sectionLabel(g.s) }
+        ];
+      });
+      const endY = pdfTable(doc, ctx, {
+        x: PDFC.mx, y: 23, colWidths: cols,
+        headers: [
+          { t: 'NO', a: 'right' }, { t: 'DESCRIPTION' }, { t: 'POSITION (mm)', a: 'right' },
+          { t: 'LENGTH', a: 'right' }, { t: 'QTY', a: 'right' }, { t: 'SECTION' }
+        ],
+        rows, rowH: 5.6, fontSize: 6.6,
+        newPageCb: () => pdfNewPage(doc, ctx, title + ' (CONT.)', sub)
+      });
+      const totalPcs = groups.reduce((s, g) => s + g.q, 0);
+      const totalLm = groups.reduce((s, g) => s + g.q * g.l / 1000, 0);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...PDFC.ink);
+      doc.text(`TOTAL: ${totalPcs} pieces · ${totalLm.toFixed(1)} linear metres`, PDFC.mx, endY + 5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.sub);
+      doc.text(`Add ${window.PRICING ? window.PRICING.wastePct || 10 : 10}% waste allowance for cutting — not included above.`, PDFC.mx, endY + 9);
     }
 
-    function drawRoofFramingPDF(doc, roofData) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('ROOF \u2014 FRAMING PLAN', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      if (roofData.type === 'mono') {
-        doc.text(`Roof joists @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 mono-pitch (high at front)`, 15, 25);
-      } else {
-        doc.text(`Trusses @ ${STUD_SPACING_MM}mm centres, ${FLOOR_JOIST_SECTION}, ${roofData.pitchDeg}\u00b0 dual pitch, ridge runs front-to-back`, 15, 25);
+    function drawWallElevationPDF(doc, ctx, wallName, wd, wallNo) {
+      const L = wd.lengthMm;
+      const sloped = Math.abs(wd.leftTopMm - wd.rightTopMm) > 25;
+      const area = { x0: 34, x1: 276, y0: 34, y1: 154 };
+      const maxTop = Math.max(wd.leftTopMm, wd.rightTopMm, 2200);
+      const scale = Math.min((area.x1 - area.x0) / (L + 400), (area.y1 - area.y0) / (maxTop + 500));
+      const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
+      pdfSheetPage(doc, ctx, `${wallName.toUpperCase()} WALL ELEVATION (W${wallNo})`, NOTES_ELEVATION, scaleLabel, scale);
+
+      const plinth = 200;
+      const groundY = 160;
+      const plinthTopY = groundY - plinth * scale;
+      const tx = x => area.x0 + ((area.x1 - area.x0) - (L + 400) * scale) / 2 + 200 * scale + x * scale;
+      const ty = y => plinthTopY - y * scale; // y = mm above finished floor level
+      const heightAt = x => wd.leftTopMm + (wd.rightTopMm - wd.leftTopMm) * (x / L);
+
+      // ---- ground line + soil hatch ----
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.6);
+      doc.line(tx(-250), groundY, tx(L + 250), groundY);
+      hatchRect(doc, tx(-250), groundY + 0.6, tx(L + 250) - tx(-250), 4.6, 2.6, PDFC.sub, 0.1);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.sub);
+      doc.text('GROUND', tx(L + 90), groundY + 1.5);
+      doc.text('FFL', tx(L + 40), plinthTopY + 1.5);
+
+      // ---- plinth (concrete, light grey fill) ----
+      doc.setFillColor(...PDFC.concrete);
+      doc.rect(tx(0), plinthTopY, L * scale, plinth * scale, 'F');
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.45);
+      doc.rect(tx(0), plinthTopY, L * scale, plinth * scale);
+      if (plinth * scale >= 6) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.ink);
+        const ptxt = 'PLINTH';
+        const ptw = doc.getTextWidth(ptxt);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(tx(L / 2) - ptw / 2 - 1.2, plinthTopY + plinth * scale / 2 - 2.2, ptw + 2.4, 3.4, 'F');
+        doc.text(ptxt, tx(L / 2), plinthTopY + plinth * scale / 2 + 0.5, { align: 'center' });
       }
-      doc.setTextColor(0);
+      pdfArchDim(doc, tx(0) + 5, groundY, tx(0) + 5, plinthTopY, '200', { off: 3, text: 'right' });
 
-      const pageW = 297, pageH = 210, marginX = 20, top = 35, bottom = 15;
-      const drawW = pageW - marginX * 2, drawH = pageH - top - bottom;
-      const scale = Math.min(drawW / roofData.widthMm, drawH / roofData.depthMm) * 0.9;
-      const originX = marginX + (drawW - roofData.widthMm * scale) / 2;
-      const originY = top + (drawH - roofData.depthMm * scale) / 2;
-      const toX = x => originX + x * scale;
-      const toY = y => originY + y * scale;
+      // ---- timber members (as in a real frame production drawing) ----
+      // Every member is a cream-filled rectangle with a dark brown
+      // outline, at true section size: studs show their 35mm face
+      // (70mm where doubled), sole plate 50mm, double top plate 50mm,
+      // header 50mm with 100mm bearings each side.
+      const STUD_FACE = 35, PLATE_H = 50;
+      const studW = STUD_FACE * scale;
+      const timberMember = (x, y, w, h) => {
+        doc.setFillColor(...PDFC.wood);
+        doc.rect(x, y, w, h, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+        doc.rect(x, y, w, h);
+      };
 
-      doc.setDrawColor(40); doc.setLineWidth(0.6);
-      doc.rect(originX, originY, roofData.widthMm * scale, roofData.depthMm * scale);
-      doc.setLineWidth(0.3);
+      // studs (doubled = 2 faces = 70mm)
+      wd.studs.forEach(s => {
+        const x = tx(s.x_mm);
+        const w = studW * (s.doubled ? 2 : 1);
+        timberMember(x - w / 2, ty(PLATE_H + s.length_mm), w, s.length_mm * scale);
+      });
 
-      if (roofData.type === 'mono') {
-        roofData.joists.forEach(j => doc.line(toX(j.x_mm), originY, toX(j.x_mm), originY + roofData.depthMm * scale));
+      // cripple studs over the headers (600mm centres)
+      (wd.cripples || []).forEach(c => {
+        const x = tx(c.x_mm);
+        timberMember(x - studW / 2, ty(c.topMm), studW, c.length_mm * scale);
+      });
+
+      // headers (span between the king studs) + sills
+      wd.openings.forEach(o => {
+        const leftMm = Math.max(0, o.left), rightMm = Math.min(L, o.right);
+        if (rightMm - leftMm < 5) return;
+        const xL = tx(leftMm), xR = tx(rightMm);
+        const yTop = ty(o.headYMm - 200), yBot = ty(o.sillYMm - 200);
+        timberMember(xL, yTop, xR - xL, 50 * scale);
+        if (!o.isDoor) {
+          timberMember(xL, yBot, xR - xL, 50 * scale);
+        }
+      });
+
+      // sole plate (solid band above FFL)
+      timberMember(tx(0), ty(PLATE_H), L * scale, PLATE_H * scale);
+
+      // double top plate (parallelogram, follows the slope)
+      {
+        const x0 = tx(0), x1 = tx(L);
+        const yA = ty(wd.leftTopMm), yB = ty(wd.leftTopMm - 50);
+        const yC = ty(wd.rightTopMm - 50), yD = ty(wd.rightTopMm);
+        doc.setFillColor(...PDFC.wood);
+        doc.triangle(x0, yA, x0, yB, x1, yC, 'F');
+        doc.triangle(x0, yA, x1, yC, x1, yD, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+        doc.line(x0, yA, x1, yD);
+        doc.line(x0, yB, x1, yC);
+        doc.line(x0, yB, x0, yA);
+        doc.line(x1, yC, x1, yD);
+      }
+
+      // ---- openings: frame, glass, labels, dims ----
+      wd.openings.forEach((o, oi) => {
+        const leftMm = Math.max(0, o.left), rightMm = Math.min(L, o.right);
+        if (rightMm - leftMm < 5) return;
+        const xL = tx(leftMm), xR = tx(rightMm);
+        const yTop = ty(o.headYMm - 200), yBot = ty(o.sillYMm - 200);
+
+        // frame (nested rects) + light-blue glazing fill
+        const fw = Math.max(60 * scale, 1.2);
+        doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.5);
+        doc.rect(xL, yTop, xR - xL, yBot - yTop);
+        doc.setFillColor(...PDFC.glass);
+        doc.rect(xL + fw, yTop + fw, (xR - xL) - 2 * fw, (yBot - yTop) - 2 * fw, 'F');
+        doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.16);
+        doc.rect(xL + fw, yTop + fw, (xR - xL) - 2 * fw, (yBot - yTop) - 2 * fw);
+        // opening label (white box behind)
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.2); doc.setTextColor(...PDFC.ink);
+        const lab1 = o.label.toUpperCase();
+        const lw1 = doc.getTextWidth(lab1);
+        doc.setFillColor(255, 255, 255);
+        doc.rect((xL + xR) / 2 - lw1 / 2 - 1.2, (yTop + yBot) / 2 - 3.4, lw1 + 2.4, 3.4, 'F');
+        doc.text(lab1, (xL + xR) / 2, (yTop + yBot) / 2 - 1, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8);
+        doc.text(`${o.widthMm} \u00d7 ${o.heightMm}`, (xL + xR) / 2, (yTop + yBot) / 2 + 2.6, { align: 'center' });
+
+        // cill / head / opening-height architectural dims (alternating sides)
+        const side = oi % 2 === 0 ? -1 : 1;
+        const xAt = side < 0 ? xL : xR;
+        if (!o.isDoor) {
+          pdfArchDim(doc, xAt, ty(0), xAt, yBot, `CILL ${Math.round(o.sillYMm - 200)}`, { off: side * 7, text: side < 0 ? 'left' : 'right' });
+        }
+        pdfArchDim(doc, xAt, ty(0), xAt, yTop, `HEAD ${Math.round(o.headYMm - 200)}`, { off: side * 11, text: side < 0 ? 'left' : 'right' });
+        if (!o.isDoor) {
+          pdfArchDim(doc, xAt, yBot, xAt, yTop, `${o.heightMm} OPENING`, { off: side * 15, text: side < 0 ? 'left' : 'right' });
+        }
+      });
+
+      // ---- member labels with leader lines ----
+      const leaderLabel = (text, xTip, yTip, xText, yText, alignLeft) => {
+        doc.setDrawColor(...PDFC.sub); doc.setLineWidth(0.15);
+        doc.line(xTip, yTip, xText, yText);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.6); doc.setTextColor(...PDFC.ink);
+        const tw = doc.getTextWidth(text);
+        const bx = alignLeft ? xText : xText - tw - 1.2;
+        doc.setFillColor(255, 255, 255);
+        doc.rect(bx - 1.2, yText - 2.2, tw + 2.4, 3.6, 'F');
+        doc.text(text, bx, yText, { align: 'left' });
+      };
+      // studs note \u2014 leader to the first common stud (past the wall end)
+      const firstStud = wd.studs.find(s => !s.doubled && s.x_mm >= STUD_SPACING_MM);
+      if (firstStud) {
+        const sx = tx(firstStud.x_mm);
+        const sy = ty(PLATE_H + firstStud.length_mm);
+        leaderLabel(`STUDS ${sectionLabel(STUD_SECTION)} @ ${STUD_SPACING_MM} C/C`, sx, sy, sx + 8, 29, true);
+      }
+      // double top plate \u2014 leader from the right end of the band
+      leaderLabel('DOUBLE TOP PLATE', tx(L) - 25, ty(heightAt(L - 500)) + 1, tx(L) - 18, ty(heightAt(L - 800)) - 4, false);
+      // sole plate \u2014 leader from the left end of the band
+      leaderLabel('SOLE PLATE', tx(0) + 10, ty(PLATE_H / 2), tx(0) - 16, ty(PLATE_H / 2), false);
+
+      // ---- slope annotation ----
+      if (sloped) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(6); doc.setTextColor(...PDFC.ink);
+        const lowY = Math.max(ty(wd.leftTopMm), ty(wd.rightTopMm));
+        doc.text(`${config.roofPitch}\u00b0 FALL TO BACK`, tx(L / 2), lowY - 2, { align: 'center' });
+      }
+
+      // ---- top position chain (ticks at segment boundaries, witness lines at ends) ----
+      if (wd.openings.length > 0) {
+        const pts = [0];
+        wd.openings.forEach(o => {
+          pts.push(Math.max(0, Math.min(L, o.left)), Math.max(0, Math.min(L, o.right)));
+        });
+        pts.push(L);
+        pts.sort((a, b) => a - b);
+        const chainY = 22.5, t = 1.05;
+        doc.setDrawColor(...PDFC.dimRed); doc.setLineWidth(0.15);
+        doc.line(tx(0), chainY - 3.2, tx(0), chainY + 2.4);
+        doc.line(tx(L), chainY - 3.2, tx(L), chainY + 2.4);
+        doc.line(tx(0), chainY, tx(L), chainY);
+        doc.line(tx(0) - t, chainY - t, tx(0) + t, chainY + t);
+        doc.line(tx(L) - t, chainY - t, tx(L) + t, chainY + t);
+        pts.slice(1, -1).forEach(p => {
+          const x = tx(p);
+          doc.line(x - t, chainY - t, x + t, chainY + t);
+        });
+        for (let i = 0; i < pts.length - 1; i++) {
+          const s1 = pts[i], s2 = pts[i + 1];
+          if (s2 - s1 < 8) continue;
+          const cx = (tx(s1) + tx(s2)) / 2;
+          const label = `${Math.round(s2 - s1)}`;
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(5.8);
+          const tw = doc.getTextWidth(label);
+          doc.setFillColor(255, 255, 255);
+          doc.rect(cx - tw / 2 - 1.1, chainY - 4.4, tw + 2.2, 3.2, 'F');
+          doc.setTextColor(...PDFC.dimRed);
+          doc.text(label, cx, chainY - 2.2, { align: 'center' });
+        }
+      }
+
+      // ---- bottom overall chain ----
+      pdfArchDim(doc, tx(0), groundY, tx(L), groundY, `${L} OVERALL WIDTH`, { off: 6 });
+
+      // ---- stud centres chain (spacing between every full-height stud) ----
+      {
+        const xs = [...new Set(wd.studs.map(s => s.x_mm))].sort((a, b) => a - b);
+        const pts = [0, ...xs, L];
+        const chainY = 176.5, t = 1.05;
+        doc.setDrawColor(...PDFC.dimRed); doc.setLineWidth(0.15);
+        pts.forEach(p => {
+          const x = tx(p);
+          doc.line(x, plinthTopY + 0.6, x, chainY + 2.4);
+        });
+        doc.line(tx(0), chainY, tx(L), chainY);
+        doc.line(tx(0) - t, chainY - t, tx(0) + t, chainY + t);
+        doc.line(tx(L) - t, chainY - t, tx(L) + t, chainY + t);
+        pts.slice(1, -1).forEach(p => {
+          const x = tx(p);
+          doc.line(x - t, chainY - t, x + t, chainY + t);
+        });
+        for (let i = 0; i < pts.length - 1; i++) {
+          const s1 = pts[i], s2 = pts[i + 1];
+          if (s2 - s1 < 6) continue;
+          const cx = (tx(s1) + tx(s2)) / 2;
+          const label = `${Math.round(s2 - s1)}`;
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(5.8);
+          const tw = doc.getTextWidth(label);
+          doc.setFillColor(255, 255, 255);
+          doc.rect(cx - tw / 2 - 1.1, chainY - 4.4, tw + 2.2, 3.2, 'F');
+          doc.setTextColor(...PDFC.dimRed);
+          doc.text(label, cx, chainY - 2.2, { align: 'center' });
+        }
+      }
+
+      // ---- wall height chains at ends (rotated labels) ----
+      if (sloped) {
+        pdfArchDim(doc, tx(0), plinthTopY, tx(0), ty(wd.leftTopMm), `${wd.leftTopMm}`, { off: -9, rotate: true });
+        pdfArchDim(doc, tx(L), plinthTopY, tx(L), ty(wd.rightTopMm), `${wd.rightTopMm}`, { off: 9, rotate: true });
+      } else {
+        pdfArchDim(doc, tx(L), plinthTopY, tx(L), ty(wd.rightTopMm), `${wd.rightTopMm} WALL HT`, { off: 9, rotate: true });
+      }
+
+      // ---- wall tag (white-filled so the chain witness lines don't cross it) ----
+      const tagX = (tx(0) + tx(L)) / 2;
+      doc.setFillColor(255, 255, 255);
+      doc.ellipse(tagX, 179, 3.4, 3.4, 'F');
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.35);
+      doc.ellipse(tagX, 179, 3.4, 3.4);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(5.5); doc.setTextColor(...PDFC.ink);
+      doc.text(`W${wallNo}`, tagX, 179.7, { align: 'center' });
+    }
+
+    function drawFloorPlanPDF(doc, ctx, floorData) {
+      const W = floorData.widthMm, D = floorData.depthMm;
+      const area = { x0: 48, x1: 262, y0: 46, y1: 144 };
+      const totalH = D + (config.hasDecking ? 1200 : 0) + 160;
+      const scale = Math.min((area.x1 - area.x0) / W, (area.y1 - area.y0) / totalH);
+      const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
+      pdfSheetPage(doc, ctx, 'FLOOR \u2014 JOIST PLAN', NOTES_FLOOR, scaleLabel, scale);
+
+      const ox = area.x0 + ((area.x1 - area.x0) - W * scale) / 2;
+      const oy = area.y1 - 80 * scale;
+      const tx = x => ox + x * scale, ty = y => oy - y * scale;
+
+      // rim joist frame + inner ring + joists
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.9);
+      doc.rect(ox, ty(D), W * scale, D * scale);
+      doc.setLineWidth(0.2);
+      doc.rect(ox + 2.5, ty(D) + 2.5, W * scale - 5, D * scale - 5);
+      floorData.joists.forEach(j => {
+        doc.setFillColor(...PDFC.wood);
+        doc.rect(tx(j.x_mm) - 17.5 * scale, ty(D) + 2.5, 35 * scale, D * scale - 5, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.12);
+        doc.rect(tx(j.x_mm) - 17.5 * scale, ty(D) + 2.5, 35 * scale, D * scale - 5);
+      });
+
+      // orientation labels
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...PDFC.ink);
+      doc.text('FRONT', ox + W * scale / 2, ty(0) - 2.5, { align: 'center' });
+      doc.text('BACK', ox + W * scale / 2, ty(D) + 6.5, { align: 'center' });
+      doc.text('LEFT', ox - 2.5, ty(D / 2) + 0.5, { align: 'right' });
+      doc.text('RIGHT', ox + W * scale + 2.5, ty(D / 2) + 0.5, { align: 'left' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.sub);
+      doc.text(`JOISTS @ ${STUD_SPACING_MM}mm C/C \u00b7 RIM JOISTS 2 OFF EACH SIDE`, ox + 3.5, ty(D) + 11);
+
+      // front decking (dashed, wider than the building)
+      if (config.hasDecking) {
+        doc.setDrawColor(...PDFC.emerald); doc.setLineWidth(0.35);
+        doc.setLineDashPattern([2.2, 1.5], 0);
+        const dd = 1200 * scale;
+        doc.rect(ox - 60 * scale, ty(0) - dd, (W + 120) * scale, dd);
+        doc.setLineDashPattern([], 0);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...PDFC.emeraldDark);
+        doc.text('FRONT DECK \u00b7 1200mm DEEP', ox + W * scale / 2, ty(0) - dd / 2 + 0.5, { align: 'center' });
+      }
+
+      // dimension chains (architectural style)
+      pdfArchDim(doc, tx(0), oy, tx(W), oy, `${W} OVERALL WIDTH`, { off: 7 });
+      pdfArchDim(doc, ox, ty(0), ox, ty(D), `${D} OVERALL DEPTH`, { off: -13, rotate: true });
+    }
+
+    function drawRoofFramingPDF(doc, ctx, roofData) {
+      const isMono = roofData.type === 'mono';
+      const ov = mm(config.overhang);
+      const planW = roofData.widthMm + 2 * ov;                          // eaves overhang both sides
+      const planD = isMono ? roofData.depthMm + 2 * ov : roofData.depthMm + 1.5 * ov;
+
+      const area = { x0: 48, x1: 262, y0: 42, y1: 144 };
+      const scale = Math.min((area.x1 - area.x0) / planW, (area.y1 - area.y0) / planD);
+      const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
+      pdfSheetPage(doc, ctx, 'ROOF \u2014 FRAMING PLAN', NOTES_ROOF, scaleLabel, scale);
+
+      const ox = area.x0 + ((area.x1 - area.x0) - planW * scale) / 2;
+      const oy = area.y0 + ((area.y1 - area.y0) - planD * scale) / 2;
+      const tx = x => ox + x * scale, ty = y => oy + y * scale;
+
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.8);
+      doc.rect(ox, oy, planW * scale, planD * scale);
+
+      if (isMono) {
+        roofData.joists.forEach(j => {
+          doc.setFillColor(...PDFC.wood);
+          doc.rect(tx(j.x_mm + ov) - 17.5 * scale, oy, 35 * scale, planD * scale, 'F');
+          doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.12);
+          doc.rect(tx(j.x_mm + ov) - 17.5 * scale, oy, 35 * scale, planD * scale);
+        });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6.2); doc.setTextColor(...PDFC.ink);
+        doc.text(`FALLS ${roofData.pitchDeg}\u00b0 TO BACK`, ox + 3.5, oy + 4.5);
       } else {
         doc.setLineWidth(0.7);
-        doc.line(originX + roofData.widthMm * scale / 2, originY, originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale);
-        doc.setLineWidth(0.3);
-        roofData.trusses.forEach(t => doc.line(originX, toY(t.x_mm), originX + roofData.widthMm * scale, toY(t.x_mm)));
+        doc.line(tx(roofData.widthMm / 2), oy, tx(roofData.widthMm / 2), oy + planD * scale);
+        roofData.trusses.forEach(t => {
+          doc.setFillColor(...PDFC.wood);
+          doc.rect(ox, ty(t.x_mm + 0.75 * ov) - 17.5 * scale, planW * scale, 35 * scale, 'F');
+          doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.12);
+          doc.rect(ox, ty(t.x_mm + 0.75 * ov) - 17.5 * scale, planW * scale, 35 * scale);
+        });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...PDFC.sub);
+        doc.text('RIDGE', tx(roofData.widthMm / 2) + 1.5, oy + 4.5);
       }
-      doc.setFontSize(8);
-      doc.text('FRONT', originX + roofData.widthMm * scale / 2, originY - 4, { align: 'center' });
-      doc.text('BACK', originX + roofData.widthMm * scale / 2, originY + roofData.depthMm * scale + 8, { align: 'center' });
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...PDFC.ink);
+      doc.text('FRONT', ox + planW * scale / 2, oy - 3, { align: 'center' });
+      doc.text('BACK', ox + planW * scale / 2, oy + planD * scale + 7, { align: 'center' });
+
+      pdfArchDim(doc, tx(0), oy, tx(planW), oy, `${planW} OVERALL WIDTH`, { off: 7 });
+      pdfArchDim(doc, ox, ty(0), ox, ty(planD), `${planD} OVERALL DEPTH`, { off: -13, rotate: true });
     }
 
-    function pdf3DModelPage(doc, shots) {
-      doc.setFontSize(14); doc.setTextColor(0);
-      doc.text('3D MODEL \u2014 VISUAL REFERENCE', 15, 18);
-      doc.setFontSize(9); doc.setTextColor(110);
-      doc.text('Renders generated directly from the online configurator at time of order.', 15, 25);
-      doc.setTextColor(0);
+    function pdf3DModelPage(doc, ctx, shots) {
+      pdfNewPage(doc, ctx, '3D MODEL \u2014 VISUAL REFERENCE',
+        'Renders generated from the configurator at time of order');
 
-      const pageW = 297;
-      const margin = 15;
-      const gap = 6;
-      const bigW = pageW - margin * 2;
-      const bigH = bigW * 0.5;
-      const bigY = 32;
+      const fit = (img, box) => {
+        const s = Math.min(box.w / img.w, box.h / img.h);
+        const w = img.w * s, h = img.h * s;
+        return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
+      };
+      const place = (img, box, label) => {
+        if (!img || !img.data) return;
+        const r = fit(img, box);
+        doc.addImage(img.data, 'JPEG', r.x, r.y, r.w, r.h);
+        doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.3);
+        doc.rect(r.x, r.y, r.w, r.h);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...PDFC.ink);
+        doc.text(label, box.x, box.y + box.h + 6);
+      };
 
-      // Large isometric/3D view on top
-      doc.addImage(shots['3d'], 'JPEG', margin, bigY, bigW, bigH);
-      doc.setDrawColor(210); doc.rect(margin, bigY, bigW, bigH);
+      place(shots['3d'], { x: 15, y: 26, w: 180, h: 126 }, '3D PERSPECTIVE VIEW');
+      place(shots['front'], { x: 205, y: 26, w: 77, h: 54 }, 'FRONT ELEVATION VIEW');
+      place(shots['top'], { x: 205, y: 94, w: 77, h: 54 }, 'PLAN / TOP VIEW');
 
-      // Front + top views side by side beneath
-      const smallY = bigY + bigH + gap;
-      const smallW = (bigW - gap) / 2;
-      const smallH = smallW * 0.5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...PDFC.sub);
+      doc.text('Customer-facing visuals only \u2014 see dimensioned drawings for build information.', 15, 172);
+    }
 
-      doc.setFontSize(8); doc.setTextColor(130);
-      doc.text('Front Elevation View', margin, smallY - 1.5);
-      doc.text('Top / Plan View', margin + smallW + gap, smallY - 1.5);
+    // Side cross-section for the mono-pitch roof \u2014 full height dimension chains.
+    function drawSideSectionPDF(doc, ctx) {
+      const d = config.depth, h = config.height, ov = config.overhang;
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+      const frontH = h + d * Math.tan(pitchRad), backH = h;
+      const frontTipY = frontH + 0.2 + ov * Math.tan(pitchRad);
+      const backTipY = backH + 0.2 - ov * Math.tan(pitchRad);
 
-      doc.addImage(shots['front'], 'JPEG', margin, smallY, smallW, smallH);
-      doc.rect(margin, smallY, smallW, smallH);
+      const xMin = -ov - 0.4, xMax = d + ov + 0.4;
+      const yMax = frontTipY + 0.55;
+      const area = { x0: 40, x1: 250, y0: 36, y1: 152 };
+      const scale = Math.min((area.x1 - area.x0) / mm(xMax - xMin), (area.y1 - area.y0) / mm(yMax));
+      const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
+      pdfSheetPage(doc, ctx, 'SECTION A\u2014A \u2014 SIDE ELEVATION', NOTES_SECTION, scaleLabel, scale);
 
-      doc.addImage(shots['top'], 'JPEG', margin + smallW + gap, smallY, smallW, smallH);
-      doc.rect(margin + smallW + gap, smallY, smallW, smallH);
+      const groundY = area.y1;
+      const ty = y => groundY - mm(y) * scale;
+      const tx = x => area.x0 + ((area.x1 - area.x0) - mm(xMax - xMin) * scale) / 2 + mm(x - xMin) * scale;
+
+      // ground + soil hatch + plinth (concrete) + floor deck (FFL)
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.5);
+      doc.line(tx(xMin), groundY, tx(xMax), groundY);
+      hatchRect(doc, tx(xMin), groundY + 0.6, tx(xMax) - tx(xMin), 4.6, 2.6, PDFC.sub, 0.1);
+      doc.setFillColor(...PDFC.concrete);
+      doc.rect(tx(0), ty(0.2), mm(d) * scale, 200 * scale, 'F');
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.45);
+      doc.rect(tx(0), ty(0.2), mm(d) * scale, 200 * scale);
+      doc.setLineWidth(0.7);
+      doc.line(tx(0), ty(0.2), tx(d), ty(0.2));
+
+      // walls: back (left) low, front (right) high — wood-filled, 160mm thick
+      const wallT = 0.16;
+      const wallRect = (x, topH) => {
+        doc.setFillColor(...PDFC.wood);
+        doc.rect(tx(x) - (wallT / 2) * 1000 * scale, ty(0.2 + topH), wallT * 1000 * scale, topH * 1000 * scale, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+        doc.rect(tx(x) - (wallT / 2) * 1000 * scale, ty(0.2 + topH), wallT * 1000 * scale, topH * 1000 * scale);
+      };
+      wallRect(0, backH);
+      wallRect(d, frontH);
+      // interior studs (35mm face)
+      [0.25, 0.5, 0.75].forEach(f => {
+        const hh = backH + (frontH - backH) * f;
+        doc.setFillColor(...PDFC.wood);
+        doc.rect(tx(f * d) - 17.5 * scale, ty(0.2 + hh), 35 * scale, hh * 1000 * scale, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.12);
+        doc.rect(tx(f * d) - 17.5 * scale, ty(0.2 + hh), 35 * scale, hh * 1000 * scale);
+      });
+
+      // roof deck (wood-filled slab) with fascia tips
+      {
+        const x0 = tx(-ov), x1 = tx(d + ov);
+        const yA = ty(backTipY), yB = ty(backTipY + 0.14);
+        const yC = ty(frontTipY + 0.14), yD = ty(frontTipY);
+        doc.setFillColor(...PDFC.wood);
+        doc.triangle(x0, yA, x0, yB, x1, yC, 'F');
+        doc.triangle(x0, yA, x1, yC, x1, yD, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+        doc.line(x0, yA, x1, yD);
+        doc.line(x0, yB, x1, yC);
+      }
+      doc.setFillColor(...PDFC.ink);
+      doc.rect(tx(-ov) - 1.2, ty(backTipY) - 1, 1.6, 2, 'F');
+      doc.rect(tx(d + ov) - 0.4, ty(frontTipY) - 1, 1.6, 2, 'F');
+
+      // roof build-up note
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.6); doc.setTextColor(...PDFC.sub);
+      doc.text('ROOF DECK 18mm OSB + SINGLE-PLY COVERING', (tx(-ov) + tx(d + ov)) / 2, Math.min(ty(backTipY), ty(frontTipY)) - 3, { align: 'center' });
+
+      // horizontal chain: overhangs + building depth (one continuous line)
+      pdfArchDim(doc, tx(-ov), groundY, tx(0), groundY, `${mm(ov)}`, { off: 6 });
+      pdfArchDim(doc, tx(0), groundY, tx(d), groundY, `${mm(d)} BUILDING DEPTH`, { off: 6 });
+      pdfArchDim(doc, tx(d), groundY, tx(d + ov), groundY, `${mm(ov)}`, { off: 6 });
+
+      // vertical chains (rotated labels)
+      pdfArchDim(doc, tx(0), ty(0), tx(0), ty(0.2), '200', { off: 6, rotate: true });
+      pdfArchDim(doc, tx(0), ty(0.2), tx(0), ty(0.2 + backH), `${mm(backH)} BACK HT`, { off: 11, rotate: true });
+      pdfArchDim(doc, tx(d), ty(0.2), tx(d), ty(0.2 + frontH), `${mm(frontH)} FRONT HT`, { off: 11, rotate: true });
+      pdfArchDim(doc, tx(d + ov), ty(0), tx(d + ov), ty(frontTipY), `${mm(frontTipY)} OVERALL`, { off: 17, rotate: true });
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...PDFC.ink);
+      doc.text('FRONT', tx(d + ov) - 4, groundY + 13, { align: 'right' });
+      doc.text('BACK', tx(-ov) + 4, groundY + 13, { align: 'left' });
+    }
+
+    // Typical truss cross-section for the apex roof.
+    function drawTrussSectionPDF(doc, ctx) {
+      const w = config.width, h = config.height, ov = config.overhang;
+      const pitchRad = (config.roofPitch || 30) * Math.PI / 180;
+      const ridgeY = h + (w / 2) * Math.tan(pitchRad);
+      const eaveTipY = h - ov * Math.tan(pitchRad);
+
+      const xMin = -ov - 0.3, xMax = w + ov + 0.3;
+      const yMax = ridgeY + 0.55;
+      const area = { x0: 40, x1: 250, y0: 40, y1: 152 };
+      const scale = Math.min((area.x1 - area.x0) / mm(xMax - xMin), (area.y1 - area.y0) / mm(yMax));
+      const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
+      pdfSheetPage(doc, ctx, 'SECTION B\u2014B \u2014 TYPICAL TRUSS', NOTES_SECTION, scaleLabel, scale);
+
+      const groundY = area.y1;
+      const ty = y => groundY - mm(y) * scale;
+      const tx = x => area.x0 + ((area.x1 - area.x0) - mm(xMax - xMin) * scale) / 2 + mm(x - xMin) * scale;
+
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.5);
+      doc.line(tx(xMin), groundY, tx(xMax), groundY);
+      hatchRect(doc, tx(xMin), groundY + 0.6, tx(xMax) - tx(xMin), 4.6, 2.6, PDFC.sub, 0.1);
+      doc.setFillColor(...PDFC.concrete);
+      doc.rect(tx(0), ty(0.2), mm(w) * scale, 200 * scale, 'F');
+      doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.45);
+      doc.rect(tx(0), ty(0.2), mm(w) * scale, 200 * scale);
+
+      // walls (wood-filled, 160mm thick) + ceiling tie (wood, 35mm)
+      const wallT = 0.16;
+      const wallRect = (x) => {
+        doc.setFillColor(...PDFC.wood);
+        doc.rect(tx(x) - (wallT / 2) * 1000 * scale, ty(0.2 + h), wallT * 1000 * scale, h * 1000 * scale, 'F');
+        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+        doc.rect(tx(x) - (wallT / 2) * 1000 * scale, ty(0.2 + h), wallT * 1000 * scale, h * 1000 * scale);
+      };
+      wallRect(0);
+      wallRect(w);
+      doc.setFillColor(...PDFC.wood);
+      doc.rect(tx(0), ty(0.2 + h) - 17.5 * scale, mm(w) * scale, 35 * scale, 'F');
+      doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.15);
+      doc.rect(tx(0), ty(0.2 + h) - 17.5 * scale, mm(w) * scale, 35 * scale);
+
+      // rafters (wood bars) + ridge block
+      doc.setDrawColor(...PDFC.wood);
+      doc.setLineWidth(35 * scale);
+      doc.line(tx(-ov), ty(eaveTipY), tx(w / 2), ty(ridgeY));
+      doc.line(tx(w + ov), ty(eaveTipY), tx(w / 2), ty(ridgeY));
+      doc.setFillColor(...PDFC.ink);
+      doc.rect(tx(w / 2) - 1, ty(ridgeY) - 1.4, 2, 2, 'F');
+
+      // horizontal chain
+      pdfArchDim(doc, tx(-ov), groundY, tx(0), groundY, `${mm(ov)}`, { off: 6 });
+      pdfArchDim(doc, tx(0), groundY, tx(w), groundY, `${mm(w)} SPAN`, { off: 6 });
+      pdfArchDim(doc, tx(w), groundY, tx(w + ov), groundY, `${mm(ov)}`, { off: 6 });
+
+      // vertical chains (rotated labels)
+      pdfArchDim(doc, tx(0), ty(0), tx(0), ty(0.2), '200', { off: 6, rotate: true });
+      pdfArchDim(doc, tx(0), ty(0.2), tx(0), ty(0.2 + h), `${mm(h)} WALL HT`, { off: 11, rotate: true });
+      pdfArchDim(doc, tx(w / 2), ty(0.2), tx(w / 2), ty(ridgeY), `${Math.round(mm(ridgeY) - 200)} RIDGE HT`, { off: 11, rotate: true });
+
+      // member labels
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...PDFC.ink);
+      doc.text('CEILING TIE', tx(w) - 2, ty(0.2 + h) - 2, { align: 'right' });
+      doc.text('RAFTER', (tx(-ov) + tx(w / 2)) / 2, (ty(eaveTipY) + ty(ridgeY)) / 2, { align: 'center' });
+      doc.text('RAFTER', (tx(w / 2) + tx(w + ov)) / 2, (ty(eaveTipY) + ty(ridgeY)) / 2, { align: 'center' });
+    }
+
+    function drawSectionPDF(doc, ctx) {
+      if (config.roofType === 'flat') drawSideSectionPDF(doc, ctx);
+      else drawTrussSectionPDF(doc, ctx);
+    }
+
+    // Label/value info box with dark title band.
+    function pdfInfoBox(doc, x, w, startY, title, rows) {
+      const rowH = 5.6;
+      doc.setFillColor(...PDFC.ink); doc.rect(x, startY, w, rowH, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.6);
+      doc.text(title, x + 2, startY + 3.8);
+      let yy = startY + rowH;
+      rows.forEach((r, i) => {
+        if (i % 2 === 1) { doc.setFillColor(...PDFC.zebra); doc.rect(x, yy, w, rowH, 'F'); }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6.4); doc.setTextColor(...PDFC.sub);
+        doc.text(r[0], x + 2, yy + 3.7);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...PDFC.ink);
+        doc.text(String(r[1]), x + w - 2, yy + 3.7, { align: 'right' });
+        yy += rowH;
+      });
+      doc.setDrawColor(...PDFC.grid); doc.setLineWidth(0.2);
+      doc.rect(x, startY, w, yy - startY);
+      return yy;
+    }
+
+    function drawCoverPage(doc, ctx, customer, quote) {
+      // draws onto the (already created) first page
+      // large brand band
+      doc.setFillColor(...PDFC.ink); doc.rect(0, 0, PDFC.pageW, 28, 'F');
+      doc.setDrawColor(...PDFC.emerald); doc.setLineWidth(1.2); doc.line(0, 28.4, PDFC.pageW, 28.4);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+      doc.text(BRAND, PDFC.mx, 11);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...PDFC.faint);
+      doc.text(`${PACK_NAME}  \u00b7  ${config.roofType === 'flat' ? 'MONO-PITCH' : 'APEX'}  \u00b7  ${config.width.toFixed(2)}m \u00d7 ${config.depth.toFixed(2)}m`, PDFC.mx, 17.5);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);
+      doc.text('REF ' + ctx.ref, 282, 11, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...PDFC.faint);
+      doc.text('Generated ' + ctx.dateStr, 282, 17.5, { align: 'right' });
+      pdfFooter(doc, ctx);
+
+      // project & customer + building specification
+      pdfInfoBox(doc, 15, 127, 35, 'PROJECT & CUSTOMER', [
+        ['Customer', customer.name || '-'],
+        ['Email', customer.email || '-'],
+        ['Phone', customer.phone || '-'],
+        ['Order reference', ctx.ref],
+        ['Generated', ctx.dateStr]
+      ]);
+      pdfInfoBox(doc, 152, 130, 35, 'BUILDING SPECIFICATION', [
+        ['External size (W \u00d7 D)', `${config.width.toFixed(2)} \u00d7 ${config.depth.toFixed(2)} m`],
+        ['Internal floor area', quote.area.toFixed(2) + ' m\u00b2'],
+        ['Overall height', config.height.toFixed(2) + ' m'],
+        ['Roof type', config.roofType === 'flat' ? 'Mono-pitch (falls to back)' : 'Apex dual pitch'],
+        ['Roof pitch', config.roofPitch + '\u00b0'],
+        ['Side overhang', config.overhang.toFixed(2) + ' m'],
+        ['Cladding', config.cladding.toUpperCase()],
+        ['Frame colour', config.frameColor === '#18181b' ? 'Anthracite RAL 7016' : 'Matt Black RAL 9005'],
+        ['Front decking', config.hasDecking ? 'Yes \u00b7 1200mm deep' : 'No'],
+        ['Floor heating', config.hasHeating ? 'Yes \u00b7 electric foil' : 'No'],
+        ['Wall framing', sectionLabel(STUD_SECTION) + ' @ ' + STUD_SPACING_MM + 'mm c/c'],
+        ['Floor / roof framing', sectionLabel(FLOOR_JOIST_SECTION) + ' @ ' + STUD_SPACING_MM + 'mm c/c'],
+        ['Stud centres', `${STUD_SPACING_MM}mm (doubled at doors & openings over ${DOUBLE_STUD_MIN_WIDTH_MM}mm)`]
+      ]);
+
+      // glazing schedule
+      const gCols = [10, 96, 22, 32, 24, 21, 12, 50];
+      const gHeaders = [
+        { t: 'NO', a: 'right' }, { t: 'DESCRIPTION' }, { t: 'WALL' },
+        { t: 'SIZE (mm)', a: 'right' }, { t: 'OFFSET', a: 'right' }, { t: 'CILL', a: 'right' },
+        { t: 'QTY', a: 'right' }, { t: 'PRICE', a: 'right' }
+      ];
+      const gRows = config.openings.map((o, i) => {
+        const wallMax = (o.wall === 'front' || o.wall === 'back') ? config.width : config.depth;
+        const leftMm = Math.round(((wallMax / 2) + o.x - getOpeningWidth(o.type) / 2) * 1000);
+        const posY = getOpeningYPosition(o);
+        const cillMm = Math.round((posY - getOpeningHeight(o.type) / 2 - 0.20) * 1000);
+        const rate = (window.PRICING.openings && window.PRICING.openings[o.type]) || 0;
+        return [
+          { t: i + 1, a: 'right' },
+          { t: getOpeningTitle(o.type) },
+          { t: o.wall.toUpperCase() },
+          { t: `${Math.round(getOpeningWidth(o.type) * 1000)} \u00d7 ${Math.round(getOpeningHeight(o.type) * 1000)}`, a: 'right' },
+          { t: leftMm, a: 'right' },
+          { t: o.type.startsWith('window') ? cillMm : '\u2014', a: 'right' },
+          { t: 1, a: 'right' },
+          { t: '\u00a3' + rate.toLocaleString(), a: 'right' }
+        ];
+      });
+      if (gRows.length === 0) gRows.push([{ t: 'No glazing specified' }]);
+      let gY = 114;
+      doc.setFillColor(...PDFC.ink); doc.rect(15, gY, 267, 5.6, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(6.6);
+      doc.text('GLAZING SCHEDULE', 17, gY + 3.8);
+      let endY = pdfTable(doc, ctx, {
+        x: 15, y: gY + 5.6, colWidths: gCols, headers: gHeaders, rows: gRows, rowH: 5.6, fontSize: 6.6,
+        newPageCb: () => pdfNewPage(doc, ctx, 'GLAZING SCHEDULE (CONT.)', 'Schedule continuation')
+      });
+
+      // quotation + materials summary
+      endY += 6;
+      if (endY > 148) { pdfNewPage(doc, ctx, 'QUOTATION', 'Cost summary'); endY = 24; }
+      const money = n => '\u00a3' + Math.round(n).toLocaleString();
+      const qEnd = pdfInfoBox(doc, 15, 127, endY, 'QUOTATION', [
+        ['Materials', money(quote.materials)],
+        ['Labour', money(quote.labour)],
+        ['Subtotal', money(quote.subtotal)],
+        ['Margin (' + quote.marginPct + '%)', money(quote.margin)]
+      ]);
+      doc.setFillColor(...PDFC.emerald);
+      doc.rect(15, qEnd, 127, 7.5, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL (EXCL. VAT)', 17, qEnd + 5);
+      doc.text(money(quote.total), 140, qEnd + 5, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6.4); doc.setTextColor(...PDFC.sub);
+      doc.text('Equivalent to ' + money(quote.perSqm) + ' / m\u00b2  \u00b7  ' + (window.PRICING.vatNote || 'Excludes VAT'), 17, qEnd + 12);
+
+      const matRows = [
+        ['Timber ' + sectionLabel((window.PRICING.timber.stud || {}).size || '72 x 35mm'), quote.studLm.toFixed(1) + ' lm'],
+        ['Timber ' + sectionLabel((window.PRICING.timber.joist || {}).size || '97 x 35mm'), quote.joistLm.toFixed(1) + ' lm'],
+        ['Cladding net area', quote.wallNetArea.toFixed(1) + ' m\u00b2'],
+        ['Roof deck area', quote.roofArea.toFixed(1) + ' m\u00b2'],
+        ['Glazing units', config.openings.length + ' units'],
+        ['Floor area', quote.area.toFixed(1) + ' m\u00b2'],
+        ['Timber waste allowance', (window.PRICING.wastePct || 0) + '%'],
+        ['Margin applied', (window.PRICING.marginPct || 0) + '%']
+      ];
+      pdfInfoBox(doc, 152, 130, endY, 'MATERIALS SUMMARY', matRows);
+
+      const noteY = Math.max(qEnd + 12, endY + 5.6 * (matRows.length + 1));
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.sub);
+      doc.text('Computer-generated production pack from the Haldane Fisher Modular configurator. All dimensions to be verified on site before fabrication.', 15, noteY + 4);
+      doc.text('Structural headers/lintels spanning over 1.2m must be confirmed by a structural engineer. Timber sizes are finished-section sizes.', 15, noteY + 7.5);
     }
 
     function buildProductionPackPDF(customer, shots) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const cutData = generateCuttingList();
-
-      // Cover / spec page
-      doc.setFontSize(20); doc.text('Garden Studio \u2014 Production Pack', 15, 20);
-      doc.setFontSize(10); doc.setTextColor(110);
-      doc.text(`Generated ${new Date().toLocaleString('en-GB')}`, 15, 27);
-      doc.setTextColor(0); doc.setFontSize(11);
-      let y = 40;
-      const line = (label, val) => {
-        doc.setFont(undefined, 'bold'); doc.text(label, 15, y);
-        doc.setFont(undefined, 'normal'); doc.text(String(val), 75, y);
-        y += 7;
+      const quote = computeQuote();
+      const ctx = {
+        ref: 'HF-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000),
+        dateStr: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        dateShort: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
       };
-      line('Customer:', customer.name || '-');
-      line('Email:', customer.email || '-');
-      line('Phone:', customer.phone || '-');
-      y += 3;
-      line('Building Size (external):', `${config.width.toFixed(2)}m x ${config.depth.toFixed(2)}m`);
-      line('Overall Height:', `${config.height.toFixed(2)}m`);
-      line('Roof Type:', config.roofType === 'flat' ? 'Mono-pitch / Flat' : 'Apex Dual Pitch');
-      line('Roof Pitch:', `${config.roofPitch}\u00b0`);
-      line('Cladding:', config.cladding);
-      line('Frame Timber:', `Studs ${STUD_SECTION} \u00b7 Floor/Roof Joists ${FLOOR_JOIST_SECTION}`);
-      line('Stud Centres:', `${STUD_SPACING_MM}mm (doubled at doors & openings \u2265${DOUBLE_STUD_MIN_WIDTH_MM}mm)`);
-      y += 3;
-      doc.setFont(undefined, 'bold'); doc.text('Glazing / Openings:', 15, y); doc.setFont(undefined, 'normal'); y += 6;
-      config.openings.forEach(o => { doc.text(`- ${getOpeningTitle(o.type)}  (${o.wall} wall)`, 20, y); y += 5.5; });
-      y += 3;
-      doc.setFont(undefined, 'bold'); doc.text('Estimated Quote:', 15, y);
-      doc.setFont(undefined, 'normal');
-      const priceEl = document.getElementById('price-total');
-      doc.text(priceEl ? priceEl.innerText : '-', 75, y);
-      y += 10;
-      doc.setFontSize(8); doc.setTextColor(130);
-      doc.text('This is a simplified as-designed shop schedule generated from the online configurator. Verify header/lintel spans over 1.2m with a structural engineer before cutting.', 15, y, { maxWidth: 260 });
 
-      // 3D model reference page
-      if (shots) {
-        doc.addPage();
-        pdf3DModelPage(doc, shots);
-      }
+      // 1. Cover / spec / quotation
+      drawCoverPage(doc, ctx, customer, quote);
 
-      // Cutting list pages
+      // 2. 3D visual reference
+      if (shots && shots['3d'] && shots['3d'].data) pdf3DModelPage(doc, ctx, shots);
+
+      // 3. Cutting lists
       cutData.walls.forEach(wd => {
-        doc.addPage();
-        pdfCuttingTablePage(doc, `${wd.name.toUpperCase()} WALL \u2014 CUTTING LIST`, wallCuttingRows(wd));
+        cuttingListPage(doc, ctx, `${wd.name.toUpperCase()} WALL \u2014 CUTTING LIST`,
+          `Framing ${sectionLabel(STUD_SECTION)} \u00b7 studs @ ${STUD_SPACING_MM}mm c/c`, wallCutRows(wd));
       });
-      doc.addPage();
       const floorRows = [];
-      cutData.floor.rimJoistsLong.forEach(r => floorRows.push([r.role + ` x${r.qty}`, '-', r.length_mm, FLOOR_JOIST_SECTION]));
-      cutData.floor.rimJoistsShort.forEach(r => floorRows.push([r.role + ` x${r.qty}`, '-', r.length_mm, FLOOR_JOIST_SECTION]));
-      cutData.floor.joists.forEach(j => floorRows.push([j.role, j.x_mm, j.length_mm, FLOOR_JOIST_SECTION]));
-      pdfCuttingTablePage(doc, 'FLOOR \u2014 CUTTING LIST', floorRows);
+      cutData.floor.rimJoistsLong.forEach(r => floorRows.push({ d: r.role, p: '-', l: r.length_mm, s: FLOOR_JOIST_SECTION, q: r.qty }));
+      cutData.floor.rimJoistsShort.forEach(r => floorRows.push({ d: r.role, p: '-', l: r.length_mm, s: FLOOR_JOIST_SECTION, q: r.qty }));
+      cutData.floor.joists.forEach(j => floorRows.push({ d: j.role, p: j.x_mm, l: j.length_mm, s: FLOOR_JOIST_SECTION, q: 1 }));
+      cuttingListPage(doc, ctx, 'FLOOR \u2014 CUTTING LIST',
+        `Framing ${sectionLabel(FLOOR_JOIST_SECTION)} \u00b7 joists @ ${STUD_SPACING_MM}mm c/c \u00b7 spanning ${cutData.floor.depthMm}mm`, floorRows);
 
-      doc.addPage();
       const roofRows = [];
       if (cutData.roof.type === 'mono') {
-        cutData.roof.joists.forEach(j => roofRows.push([j.role, j.x_mm, j.length_mm, FLOOR_JOIST_SECTION]));
+        cutData.roof.joists.forEach(j => roofRows.push({ d: j.role, p: j.x_mm, l: j.length_mm, s: FLOOR_JOIST_SECTION, q: 1 }));
       } else {
-        roofRows.push(['Ridge Board', '-', cutData.roof.ridgeLen_mm, FLOOR_JOIST_SECTION]);
+        roofRows.push({ d: 'Ridge board', p: '-', l: cutData.roof.ridgeLen_mm, s: FLOOR_JOIST_SECTION, q: 1 });
         cutData.roof.trusses.forEach(t => {
-          roofRows.push([t.role + ' - Rafter (x2)', t.x_mm, t.rafterLen_mm, FLOOR_JOIST_SECTION]);
-          roofRows.push([t.role + ' - Ceiling Tie', t.x_mm, t.tieLen_mm, FLOOR_JOIST_SECTION]);
+          roofRows.push({ d: t.role + ' \u2014 rafter', p: t.x_mm, l: t.rafterLen_mm, s: FLOOR_JOIST_SECTION, q: 2 });
+          roofRows.push({ d: t.role + ' \u2014 ceiling tie', p: t.x_mm, l: t.tieLen_mm, s: FLOOR_JOIST_SECTION, q: 1 });
         });
       }
-      pdfCuttingTablePage(doc, 'ROOF \u2014 CUTTING LIST', roofRows);
+      cuttingListPage(doc, ctx, 'ROOF \u2014 CUTTING LIST',
+        `Framing ${sectionLabel(FLOOR_JOIST_SECTION)} \u00b7 ${cutData.roof.pitchDeg}\u00b0 ${cutData.roof.type === 'mono' ? 'mono-pitch' : 'dual-pitch'}`, roofRows);
 
-      // Production drawings
-      cutData.walls.forEach(wd => {
-        doc.addPage();
-        drawWallElevationPDF(doc, wd.name, wd, wd.lengthMm);
-      });
-      doc.addPage();
-      drawFloorPlanPDF(doc, cutData.floor);
-      doc.addPage();
-      drawRoofFramingPDF(doc, cutData.roof);
+      // 4. Production drawings
+      cutData.walls.forEach((wd, i) => drawWallElevationPDF(doc, ctx, wd.name, wd, i + 1));
+      drawFloorPlanPDF(doc, ctx, cutData.floor);
+      drawRoofFramingPDF(doc, ctx, cutData.roof);
+      drawSectionPDF(doc, ctx);
+
+      // Resolve "Page N of X" (document pages) and "SHEET N OF Y" (drawing sheets)
+      if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages('X');
+        doc.putTotalPages('Y');
+      }
 
       return doc;
     }
@@ -2653,13 +3676,36 @@
       renderer.render(scene, camera);
     }
 
+    // Dev-only helpers (available when the page is opened with ?dev=1)
+    function devDownloadPack() {
+      const shots = capture3DSnapshots();
+      const doc = buildProductionPackPDF({ name: 'DEV TEST CUSTOMER', email: 'dev@test.local', phone: '-' }, shots);
+      doc.save('production-pack-dev.pdf');
+    }
+    window.__devBuildPDF = function () {
+      const shots = capture3DSnapshots();
+      const doc = buildProductionPackPDF({ name: 'Dev Test Customer', email: 'dev@test.local', phone: '-' }, shots);
+      return {
+        pdfBase64: doc.output('datauristring').split(',')[1],
+        quote: window.__lastQuote,
+        pages: doc.getNumberOfPages()
+      };
+    };
+
     window.addEventListener('load', () => {
+      syncCladdingPriceLabels();
       updateCanvasSize();
       renderPlacedOpeningsList();
       build3DRoom();
       setCameraView('3d');
       animate();
       checkPendingQuoteSubmission();
+
+      if (new URLSearchParams(window.location.search).has('dev')) {
+        const devBtn = document.getElementById('dev-pdf-btn');
+        if (devBtn) devBtn.classList.remove('hidden');
+      }
+      window.__devReady = true;
     });
   </script>
 </body>

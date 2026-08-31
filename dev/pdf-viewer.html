@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PDF preview</title>
+<style>
+  body { background: #2a2a2e; margin: 0; padding: 24px; }
+  .page { background: #fff; margin: 0 auto 20px; box-shadow: 0 3px 10px rgba(0,0,0,.5); display: block; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+<div id="pages"></div>
+<script>
+const url = new URLSearchParams(location.search).get('f') || '/dev/output/out.pdf';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+(async () => {
+  const pdf = await pdfjsLib.getDocument(url).promise;
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale: 1.7 });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    canvas.className = 'page';
+    document.getElementById('pages').appendChild(canvas);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    pages.push(canvas);
+  }
+  window.__pages = pages;
+  window.__done = true;
+})();
+</script>
+</body>
+</html>

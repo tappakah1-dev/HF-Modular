@@ -4,5 +4,8 @@
   "private": true,
   "dependencies": {
     "resend": "^3.0.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0"
   }
 }
