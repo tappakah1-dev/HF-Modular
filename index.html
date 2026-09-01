@@ -1199,8 +1199,10 @@
         // from the wall top at the centreline out to the ridge.
         const roofThick = 0.10;
         const run = w / 2 + overhang;
-        const ridgeY = h + (w / 2) * Math.tan(pitchRad);
-        const eaveTipY = h - overhang * Math.tan(pitchRad);
+        // roof deck sits ON the wall tops: eaves and ridge raised 0.2m
+        // above plate height so the walls never pierce the roof plane
+        const ridgeY = h + 0.2 + (w / 2) * Math.tan(pitchRad);
+        const eaveTipY = h + 0.2 - overhang * Math.tan(pitchRad);
         const rise = ridgeY - eaveTipY;
         const slabLen = Math.sqrt(run * run + rise * rise);
         const centerY = (ridgeY + eaveTipY) / 2;
@@ -2238,7 +2240,7 @@
     const FLOOR_JOIST_SECTION = '97x35mm C16'; // matches 100mm insulation depth
     const STUD_SPACING_MM = 600;
     const DOUBLE_STUD_MIN_WIDTH_MM = 900; // "big" openings get doubled trimmer studs
-    const PLATE_ALLOW_MM = 100; // top + bottom plate thickness deducted from stud lengths
+    const PLATE_ALLOW_MM = 105; // plate thickness deducted from stud lengths: 35 sole + 2×35 double top
 
     function mm(m) { return Math.round(m * 1000); }
 
@@ -2295,28 +2297,42 @@
 
       const headers = [], sills = [], cripples = [];
       openings.forEach(o => {
-        // king studs run FULL HEIGHT (sole plate to top plate)
+        // king studs run FULL HEIGHT (sole plate to top plate).
+        // Their inner faces sit at the unit edges, so the opening unit
+        // fits BETWEEN the studs: centres offset by half a stud face
+        // (35mm doubled / 17.5mm single) outside the rough opening.
         const count = o.double ? 2 : 1;
-        [o.left, o.right].forEach(xPos => {
-          const uM = (xPos - Lmm / 2) / 1000;
+        const clearMm = o.double ? 35 : 17.5;
+        [{ pos: o.left - clearMm }, { pos: o.right + clearMm }].forEach(({ pos }) => {
+          const uM = (pos - Lmm / 2) / 1000;
           const fullLen = Math.round(mm(heightAt(uM)) - PLATE_ALLOW_MM);
           for (let i = 0; i < count; i++) {
-            studs.push({ x_mm: Math.round(xPos), length_mm: fullLen, role: (o.double ? 'Doubled King Stud' : 'Jamb Stud') + ' - ' + o.label, doubled: o.double });
+            studs.push({ x_mm: Math.round(pos), length_mm: fullLen, role: (o.double ? 'Doubled King Stud' : 'Jamb Stud') + ' - ' + o.label, doubled: o.double });
           }
         });
-        // cripple studs over the header at regular centres
+        // cripple studs over the header + under the sill at regular centres
         studXs.filter(x => x > o.left + 15 && x < o.right - 15).forEach(x => {
           const uM = (x - Lmm / 2) / 1000;
           cripples.push({
             x_mm: Math.round(x),
-            length_mm: Math.round(mm(heightAt(uM)) + 150 - o.headYMm),
-            topMm: Math.round(mm(heightAt(uM)) - 50),
+            length_mm: Math.round(mm(heightAt(uM)) + 130 - o.headYMm),
+            topMm: Math.round(mm(heightAt(uM)) - 70),
             role: 'Cripple Stud - ' + o.label, doubled: false
           });
+          if (!o.isDoor && o.sillYMm - 270 > 100) {
+            cripples.push({
+              x_mm: Math.round(x),
+              length_mm: o.sillYMm - 270,
+              topMm: o.sillYMm - 235,
+              role: 'Cripple Stud (under sill) - ' + o.label, doubled: false
+            });
+          }
         });
-        // header spans between the king studs
-        headers.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm, role: (o.double ? 'Doubled ' : '') + 'Header/Lintel - ' + o.label, double: o.double });
-        if (!o.isDoor) {
+        // header spans the unit and bears onto each king stud:
+        // 45mm onto a doubled pair, 35mm onto a single (never overhangs it)
+        const bearing = o.double ? 45 : 35;
+        headers.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm + 2 * bearing, role: (o.double ? 'Doubled ' : '') + 'Header/Lintel - ' + o.label, double: o.double });
+        if (!o.isDoor && o.sillYMm - 235 > 0) {
           sills.push({ x_mm: Math.round(o.centerMm), length_mm: o.widthMm, role: 'Sill - ' + o.label });
         }
       });
@@ -2369,8 +2385,9 @@
       const w = config.width, d = config.depth, h = config.height, overhang = config.overhang;
       const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
       const run = w / 2 + overhang;
-      const ridgeY = h + (w / 2) * Math.tan(pitchRad);
-      const eaveTipY = h - overhang * Math.tan(pitchRad);
+      // deck sits on the wall tops (matches the 3D model)
+      const ridgeY = h + 0.2 + (w / 2) * Math.tan(pitchRad);
+      const eaveTipY = h + 0.2 - overhang * Math.tan(pitchRad);
       const rise = ridgeY - eaveTipY;
       const slabLenMm = Math.round(mm(Math.sqrt(run * run + rise * rise)));
       const tieMm = mm(w);
@@ -2765,31 +2782,38 @@
       return groups;
     }
 
-    function cuttingListPage(doc, ctx, title, sub, rawRows) {
+    function cuttingListPage(doc, ctx, title, sub, rawRows, hidePos = false) {
       pdfNewPage(doc, ctx, title, sub);
       const groups = groupCutRows(rawRows);
-      const cols = [10, 120, 42, 30, 12, 53];
+      const cols = hidePos ? [10, 162, 30, 12, 53] : [10, 120, 42, 30, 12, 53];
       const rows = groups.map((g, i) => {
         let pos = '-';
-        if (g.positions.length === 1) pos = String(g.positions[0]);
-        else if (g.positions.length <= 4) pos = g.positions.join(', ');
-        else pos = g.positions.slice(0, 3).join(', ') + ' … +' + (g.positions.length - 3);
-        if (pos.length > 26) pos = g.positions.length + ' positions';
-        return [
+        if (!hidePos) {
+          if (g.positions.length === 1) pos = String(g.positions[0]);
+          else if (g.positions.length <= 4) pos = g.positions.join(', ');
+          else pos = g.positions.slice(0, 3).join(', ') + ' … +' + (g.positions.length - 3);
+          if (pos.length > 26) pos = g.positions.length + ' positions';
+        }
+        const cells = [
           { t: i + 1, a: 'right' },
-          { t: g.d },
-          { t: pos, a: 'right' },
+          { t: g.d }
+        ];
+        if (!hidePos) cells.push({ t: pos, a: 'right' });
+        cells.push(
           { t: g.l, a: 'right' },
           { t: g.q, a: 'right' },
           { t: sectionLabel(g.s) }
-        ];
+        );
+        return cells;
       });
+      const headers = [
+        { t: 'NO', a: 'right' }, { t: 'DESCRIPTION' }
+      ];
+      if (!hidePos) headers.push({ t: 'POSITION (mm)', a: 'right' });
+      headers.push({ t: 'LENGTH', a: 'right' }, { t: 'QTY', a: 'right' }, { t: 'SECTION' });
       const endY = pdfTable(doc, ctx, {
         x: PDFC.mx, y: 23, colWidths: cols,
-        headers: [
-          { t: 'NO', a: 'right' }, { t: 'DESCRIPTION' }, { t: 'POSITION (mm)', a: 'right' },
-          { t: 'LENGTH', a: 'right' }, { t: 'QTY', a: 'right' }, { t: 'SECTION' }
-        ],
+        headers,
         rows, rowH: 5.6, fontSize: 6.6,
         newPageCb: () => pdfNewPage(doc, ctx, title + ' (CONT.)', sub)
       });
@@ -2804,8 +2828,16 @@
     function drawWallElevationPDF(doc, ctx, wallName, wd, wallNo) {
       const L = wd.lengthMm;
       const sloped = Math.abs(wd.leftTopMm - wd.rightTopMm) > 25;
+      const mono = config.roofType === 'flat';
+      const pitch = config.roofPitch || 0;
+      const pitchRad = pitch * Math.PI / 180;
+      const isGable = !mono && (wallName === 'front' || wallName === 'back');
+      const isEaveWall = !mono && !isGable;
+      // apex roof geometry (matches the 3D model — deck clears the wall tops)
+      const ridgeYMm = !mono ? mm(config.height + 0.2 + (config.width / 2) * Math.tan(pitchRad)) : 0;
+      const eaveYMm = !mono ? mm(config.height + 0.2 - config.overhang * Math.tan(pitchRad)) : 0;
       const area = { x0: 34, x1: 276, y0: 34, y1: 154 };
-      const maxTop = Math.max(wd.leftTopMm, wd.rightTopMm, 2200);
+      const maxTop = Math.max(wd.leftTopMm, wd.rightTopMm, ridgeYMm - 200, 2200);
       const scale = Math.min((area.x1 - area.x0) / (L + 400), (area.y1 - area.y0) / (maxTop + 500));
       const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
       pdfSheetPage(doc, ctx, `${wallName.toUpperCase()} WALL ELEVATION (W${wallNo})`, NOTES_ELEVATION, scaleLabel, scale);
@@ -2845,8 +2877,13 @@
       // outline, at true section size: studs show their 35mm face
       // (70mm where doubled), sole plate 50mm, double top plate 50mm,
       // header 50mm with 100mm bearings each side.
-      const STUD_FACE = 35, PLATE_H = 50;
+      // Member sizes from the 72×35 C16 section: studs show their 35mm face,
+      // plates laid flat are 35mm tall (sole = 1 ply, top = 2 plies of 35),
+      // headers are 72mm tall (doubled = 2 plies of 36), sills 35mm.
+      const STUD_FACE = 35, SOLE_H = 35, TOP_PLY = 35, HEADER_H = 72, SILL_H = 35;
       const studW = STUD_FACE * scale;
+      // hairline gap in PAGE mm so doubled members clearly read as TWO pieces
+      const plyGap = Math.max(1.0, 3 * scale);
       const timberMember = (x, y, w, h) => {
         doc.setFillColor(...PDFC.wood);
         doc.rect(x, y, w, h, 'F');
@@ -2854,11 +2891,15 @@
         doc.rect(x, y, w, h);
       };
 
-      // studs (doubled = 2 faces = 70mm)
+      // studs — doubled king studs drawn as TWO adjacent 35mm faces
       wd.studs.forEach(s => {
         const x = tx(s.x_mm);
-        const w = studW * (s.doubled ? 2 : 1);
-        timberMember(x - w / 2, ty(PLATE_H + s.length_mm), w, s.length_mm * scale);
+        if (s.doubled) {
+          timberMember(x - studW - plyGap / 2, ty(SOLE_H + s.length_mm), studW, s.length_mm * scale);
+          timberMember(x + plyGap / 2, ty(SOLE_H + s.length_mm), studW, s.length_mm * scale);
+        } else {
+          timberMember(x - studW / 2, ty(SOLE_H + s.length_mm), studW, s.length_mm * scale);
+        }
       });
 
       // cripple studs over the headers (600mm centres)
@@ -2867,34 +2908,46 @@
         timberMember(x - studW / 2, ty(c.topMm), studW, c.length_mm * scale);
       });
 
-      // headers (span between the king studs) + sills
+      // headers (span between the king studs — doubled = two plies) + sills
       wd.openings.forEach(o => {
         const leftMm = Math.max(0, o.left), rightMm = Math.min(L, o.right);
         if (rightMm - leftMm < 5) return;
         const xL = tx(leftMm), xR = tx(rightMm);
         const yTop = ty(o.headYMm - 200), yBot = ty(o.sillYMm - 200);
-        timberMember(xL, yTop, xR - xL, 50 * scale);
-        if (!o.isDoor) {
-          timberMember(xL, yBot, xR - xL, 50 * scale);
+        // header bears onto the king studs each side (45 doubled / 35 single)
+        const bearing = o.double ? 45 : 35;
+        const hxL = tx(Math.max(0, o.left) - bearing), hxR = tx(Math.min(L, o.right) + bearing);
+        if (o.double) {
+          timberMember(hxL, yTop, hxR - hxL, (HEADER_H / 2) * scale - plyGap / 2);
+          timberMember(hxL, yTop + (HEADER_H / 2) * scale + plyGap / 2, hxR - hxL, (HEADER_H / 2) * scale - plyGap / 2);
+        } else {
+          timberMember(hxL, yTop, hxR - hxL, HEADER_H * scale);
+        }
+        if (!o.isDoor && o.sillYMm - 235 > 0) {
+          timberMember(xL, yBot, xR - xL, SILL_H * scale);
         }
       });
 
-      // sole plate (solid band above FFL)
-      timberMember(tx(0), ty(PLATE_H), L * scale, PLATE_H * scale);
+      // sole plate — single 35mm ply above FFL
+      timberMember(tx(0), ty(SOLE_H), L * scale, SOLE_H * scale);
 
-      // double top plate (parallelogram, follows the slope)
+      // double top plate — TWO 35mm plies, stacked with a hairline gap, following the slope
       {
         const x0 = tx(0), x1 = tx(L);
-        const yA = ty(wd.leftTopMm), yB = ty(wd.leftTopMm - 50);
-        const yC = ty(wd.rightTopMm - 50), yD = ty(wd.rightTopMm);
-        doc.setFillColor(...PDFC.wood);
-        doc.triangle(x0, yA, x0, yB, x1, yC, 'F');
-        doc.triangle(x0, yA, x1, yC, x1, yD, 'F');
-        doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
-        doc.line(x0, yA, x1, yD);
-        doc.line(x0, yB, x1, yC);
-        doc.line(x0, yB, x0, yA);
-        doc.line(x1, yC, x1, yD);
+        const ply = (off) => {
+          const yA = ty(wd.leftTopMm - off), yB = ty(wd.leftTopMm - off - TOP_PLY);
+          const yC = ty(wd.rightTopMm - off - TOP_PLY), yD = ty(wd.rightTopMm - off);
+          doc.setFillColor(...PDFC.wood);
+          doc.triangle(x0, yA, x0, yB, x1, yC, 'F');
+          doc.triangle(x0, yA, x1, yC, x1, yD, 'F');
+          doc.setDrawColor(...PDFC.woodOutline); doc.setLineWidth(0.18);
+          doc.line(x0, yA, x1, yD);
+          doc.line(x0, yB, x1, yC);
+        };
+        ply(0);                          // top ply: [top-35, top]
+        ply(TOP_PLY + plyGap / scale);   // bottom ply, separated by the hairline gap
+        doc.line(x0, ty(wd.leftTopMm), x0, ty(wd.leftTopMm - 71 - plyGap / scale));
+        doc.line(x1, ty(wd.rightTopMm), x1, ty(wd.rightTopMm - 71 - plyGap / scale));
       }
 
       // ---- openings: frame, glass, labels, dims ----
@@ -2949,19 +3002,67 @@
       const firstStud = wd.studs.find(s => !s.doubled && s.x_mm >= STUD_SPACING_MM);
       if (firstStud) {
         const sx = tx(firstStud.x_mm);
-        const sy = ty(PLATE_H + firstStud.length_mm);
+        const sy = ty(SOLE_H + firstStud.length_mm);
         leaderLabel(`STUDS ${sectionLabel(STUD_SECTION)} @ ${STUD_SPACING_MM} C/C`, sx, sy, sx + 8, 29, true);
       }
       // double top plate \u2014 leader from the right end of the band
-      leaderLabel('DOUBLE TOP PLATE', tx(L) - 25, ty(heightAt(L - 500)) + 1, tx(L) - 18, ty(heightAt(L - 800)) - 4, false);
+      // (hidden behind the roof plane on eave walls under an apex roof)
+      if (!isEaveWall) {
+        leaderLabel('DOUBLE TOP PLATE', tx(L) - 25, ty(heightAt(L - 500)) + 1, tx(L) - 18, ty(heightAt(L - 800)) - 4, false);
+      }
       // sole plate \u2014 leader from the left end of the band
-      leaderLabel('SOLE PLATE', tx(0) + 10, ty(PLATE_H / 2), tx(0) - 16, ty(PLATE_H / 2), false);
+      leaderLabel('SOLE PLATE', tx(0) + 10, ty(SOLE_H / 2), tx(0) - 16, ty(SOLE_H / 2), false);
 
       // ---- slope annotation ----
       if (sloped) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(6); doc.setTextColor(...PDFC.ink);
         const lowY = Math.max(ty(wd.leftTopMm), ty(wd.rightTopMm));
         doc.text(`${config.roofPitch}\u00b0 FALL TO BACK`, tx(L / 2), lowY - 2, { align: 'center' });
+      }
+
+      // ---- roof above the wall (apex / dual-pitch only) ----
+      if (isGable) {
+        // gable infill triangle + roof deck edge with eave overhangs
+        const yWallTop = ty(mm(config.height));
+        const yApex = ty(ridgeYMm - 200);
+        const yEave = ty(eaveYMm - 200);
+        const xL0 = tx(0), xR0 = tx(L), xMid = tx(L / 2);
+        const xEaveL = tx(-mm(config.overhang)), xEaveR = tx(L + mm(config.overhang));
+        doc.setFillColor(...PDFC.zebra);
+        doc.triangle(xL0, yWallTop, xMid, yApex, xR0, yWallTop, 'F');
+        doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.35);
+        doc.triangle(xL0, yWallTop, xMid, yApex, xR0, yWallTop, 'S');
+        doc.setLineWidth(0.6);
+        doc.line(xEaveL, yEave, xMid, yApex);
+        doc.line(xMid, yApex, xEaveR, yEave);
+        doc.setFillColor(...PDFC.ink);
+        doc.rect(xEaveL - 1, yEave - 0.8, 1.8, 1.8, 'F');
+        doc.rect(xEaveR - 0.8, yEave - 0.8, 1.8, 1.8, 'F');
+        // ridge height dim at the centre
+        pdfArchDim(doc, xMid, ty(0), xMid, yApex, `${ridgeYMm - 200} RIDGE HT`, { off: -13, rotate: true });
+        // roof pitch annotation at the apex
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.ink);
+        doc.text(`${pitch}° ROOF PITCH`, xMid + 6, yApex - 2.5);
+        doc.setDrawColor(...PDFC.sub); doc.setLineWidth(0.15);
+        doc.line(xMid + 1.5, yApex + 1.5, xMid + 5, yApex - 1.5);
+      }
+      if (isEaveWall) {
+        // near roof plane seen in side elevation: band from eaves to ridge,
+        // overhanging the wall ends by half the roof depth overhang
+        const yRidge = ty(ridgeYMm - 200);
+        const yEave = ty(eaveYMm - 200);
+        const xL0 = tx(-mm(config.overhang * 0.75));
+        const xR0 = tx(L + mm(config.overhang * 0.75));
+        doc.setFillColor(...PDFC.zebra);
+        doc.rect(xL0, yRidge, xR0 - xL0, yEave - yRidge, 'F');
+        doc.setDrawColor(...PDFC.ink); doc.setLineWidth(0.25);
+        doc.rect(xL0, yRidge, xR0 - xL0, yEave - yRidge);
+        doc.setLineWidth(0.7);
+        doc.line(xL0 - 2, yRidge, xR0 + 2, yRidge);
+        doc.line(xL0 - 2, yEave, xR0 + 2, yEave);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(5.8); doc.setTextColor(...PDFC.ink);
+        doc.text('RIDGE', xL0 + 2, yRidge + 2.6);
+        doc.text(`ROOF ${pitch}°`, xR0 - 2, yRidge + 2.6, { align: 'right' });
       }
 
       // ---- top position chain (ticks at segment boundaries, witness lines at ends) ----
@@ -3107,7 +3208,13 @@
       const area = { x0: 48, x1: 262, y0: 42, y1: 144 };
       const scale = Math.min((area.x1 - area.x0) / planW, (area.y1 - area.y0) / planD);
       const scaleLabel = `1:${Math.max(1, Math.round(1 / scale))}`;
-      pdfSheetPage(doc, ctx, 'ROOF \u2014 FRAMING PLAN', NOTES_ROOF, scaleLabel, scale);
+      const roofNotes = isMono ? NOTES_ROOF : [
+        '1. RAFTERS 97 \u00d7 35mm C16, TRUSSES AT 600mm C/C OVER 18mm OSB DECK.',
+        '2. SINGLE-PLY COVERING. RIDGE RUNS FRONT TO BACK AS SHOWN.',
+        '3. ALLOW 10% CUTTING WASTE WHEN ORDERING. ALL DIMENSIONS IN MILLIMETRES.',
+        '4. VERIFY ALL DIMENSIONS ON SITE BEFORE FABRICATION.'
+      ];
+      pdfSheetPage(doc, ctx, 'ROOF \u2014 FRAMING PLAN', roofNotes, scaleLabel, scale);
 
       const ox = area.x0 + ((area.x1 - area.x0) - planW * scale) / 2;
       const oy = area.y0 + ((area.y1 - area.y0) - planD * scale) / 2;
@@ -3262,8 +3369,9 @@
     function drawTrussSectionPDF(doc, ctx) {
       const w = config.width, h = config.height, ov = config.overhang;
       const pitchRad = (config.roofPitch || 30) * Math.PI / 180;
-      const ridgeY = h + (w / 2) * Math.tan(pitchRad);
-      const eaveTipY = h - ov * Math.tan(pitchRad);
+      // deck sits on the wall tops (matches the 3D model)
+      const ridgeY = h + 0.2 + (w / 2) * Math.tan(pitchRad);
+      const eaveTipY = h + 0.2 - ov * Math.tan(pitchRad);
 
       const xMin = -ov - 0.3, xMax = w + ov + 0.3;
       const yMax = ridgeY + 0.55;
@@ -3476,10 +3584,27 @@
       // 2. 3D visual reference
       if (shots && shots['3d'] && shots['3d'].data) pdf3DModelPage(doc, ctx, shots);
 
-      // 3. Cutting lists
+      // 3. Cutting lists \u2014 subtitle carries the roof geometry where it
+      // affects the wall framing (pitch on mono side walls, gable/eave
+      // walls under a dual-pitch roof)
+      const mono = config.roofType === 'flat';
+      const pitchDeg = config.roofPitch || 0;
+      const wallSub = (wd) => {
+        const base = `Framing ${sectionLabel(STUD_SECTION)} \u00b7 studs @ ${STUD_SPACING_MM}mm c/c`;
+        if (mono && (wd.name === 'left' || wd.name === 'right') && pitchDeg > 0) {
+          return `${base} \u00b7 falls ${pitchDeg}\u00b0 to back \u2014 top plate cut at ${pitchDeg}\u00b0`;
+        }
+        if (!mono && (wd.name === 'front' || wd.name === 'back')) {
+          return `${base} \u00b7 gable end \u2014 ${pitchDeg}\u00b0 roof pitch`;
+        }
+        if (!mono) {
+          return `${base} \u00b7 eave wall \u2014 ${pitchDeg}\u00b0 roof pitch`;
+        }
+        return base;
+      };
       cutData.walls.forEach(wd => {
         cuttingListPage(doc, ctx, `${wd.name.toUpperCase()} WALL \u2014 CUTTING LIST`,
-          `Framing ${sectionLabel(STUD_SECTION)} \u00b7 studs @ ${STUD_SPACING_MM}mm c/c`, wallCutRows(wd));
+          wallSub(wd), wallCutRows(wd));
       });
       const floorRows = [];
       cutData.floor.rimJoistsLong.forEach(r => floorRows.push({ d: r.role, p: '-', l: r.length_mm, s: FLOOR_JOIST_SECTION, q: r.qty }));
@@ -3500,6 +3625,15 @@
       }
       cuttingListPage(doc, ctx, 'ROOF \u2014 CUTTING LIST',
         `Framing ${sectionLabel(FLOOR_JOIST_SECTION)} \u00b7 ${cutData.roof.pitchDeg}\u00b0 ${cutData.roof.type === 'mono' ? 'mono-pitch' : 'dual-pitch'}`, roofRows);
+
+      // Master combined cutting list \u2014 every identical part from the whole
+      // build grouped into one list so the saw operator cuts longest first
+      const masterRows = [];
+      cutData.walls.forEach(wd => wallCutRows(wd).forEach(r => masterRows.push({ ...r, p: '-' })));
+      floorRows.forEach(r => masterRows.push({ ...r, p: '-' }));
+      roofRows.forEach(r => masterRows.push({ ...r, p: '-' }));
+      cuttingListPage(doc, ctx, 'MASTER CUTTING LIST \u2014 ALL PARTS COMBINED',
+        'Every identical piece from the whole build grouped into one list \u00b7 cut longest first', masterRows, true);
 
       // 4. Production drawings
       cutData.walls.forEach((wd, i) => drawWallElevationPDF(doc, ctx, wd.name, wd, i + 1));
@@ -3677,12 +3811,124 @@
     }
 
     // Dev-only helpers (available when the page is opened with ?dev=1)
+    function applyDevRoofOverride() {
+      const q = new URLSearchParams(window.location.search);
+      if (q.has('stress')) {
+        config.width = 8;
+        config.depth = 6;
+        config.height = 3.2;
+        config.roofPitch = 15;
+        config.openings = [
+          { id: 'a', type: 'bifold-360', wall: 'front', x: 0 },
+          { id: 'b', type: 'window-casement-120', wall: 'left', x: 0.5, y: 1.35 },
+          { id: 'c', type: 'french-180', wall: 'right', x: -1, y: 0 },
+          { id: 'd', type: 'window-tall-80', wall: 'back', x: 1, y: 1.25 }
+        ];
+        build3DRoom();
+      }
+      if (q.has('apex')) {
+        config.roofType = 'pitched';
+        config.roofPitch = 30;
+        updatePitchControl('pitched');
+        build3DRoom();
+      }
+    }
     function devDownloadPack() {
+      applyDevRoofOverride();
       const shots = capture3DSnapshots();
       const doc = buildProductionPackPDF({ name: 'DEV TEST CUSTOMER', email: 'dev@test.local', phone: '-' }, shots);
       doc.save('production-pack-dev.pdf');
     }
+    // ============================================================
+    // CUTTING LIST QA — verifies every cut piece fits where it
+    // should (plate stack, header bearings, cripple lands, spans).
+    // Called from the dev verification pipeline; reports PASS/FAIL.
+    // ============================================================
+    window.__devCheckCuts = function () {
+      const cut = generateCuttingList();
+      const out = [];
+      let fails = 0;
+      const ok = (cond, msg) => {
+        if (!cond) fails++;
+        out.push((cond ? 'PASS ' : 'FAIL ') + msg);
+      };
+      const near = (a, b, tol = 1.5) => Math.abs(a - b) <= tol;
+      const w = config.width, d = config.depth, h = config.height;
+      const mono = config.roofType === 'flat';
+      const pitchRad = (config.roofPitch || 0) * Math.PI / 180;
+
+      // ---- walls ----
+      cut.walls.forEach(wd => {
+        const L = wd.lengthMm;
+        const heightAt = wallHeightAtFn(wd.name);
+        const uOf = x => (x - L / 2) / 1000;
+        ok(near(wd.bottomPlate.length_mm, L), `${wd.name.toUpperCase()}: sole plate ${wd.bottomPlate.length_mm} = wall length ${L}`);
+        const dTop = Math.round(Math.sqrt(L * L + Math.pow(wd.rightTopMm - wd.leftTopMm, 2)));
+        ok(near(wd.topPlates[0].length_mm, dTop), `${wd.name.toUpperCase()}: top plate ${wd.topPlates[0].length_mm} = slope length ${dTop}`);
+        // every full-height stud: sole(35) + stud + top plies(70) = wall height at its x
+        wd.studs.forEach(s => {
+          const expect = Math.round(mm(heightAt(uOf(s.x_mm))) - PLATE_ALLOW_MM);
+          ok(near(s.length_mm, expect), `${wd.name.toUpperCase()}: ${s.role} @${s.x_mm} = ${s.length_mm} (expected ${expect})`);
+        });
+        // headers: unit width + 2 bearings; bearing never exceeds the stud width
+        wd.openings.forEach(o => {
+          const hh = wd.headers.find(h => h.x_mm === Math.round(o.centerMm));
+          const bear = o.double ? 45 : 35;
+          ok(hh && near(hh.length_mm, o.widthMm + 2 * bear), `${wd.name.toUpperCase()}: header ${o.label} = ${hh ? hh.length_mm : 'MISSING'} (unit ${o.widthMm} + 2x${bear} bearings)`);
+        });
+        // cripples: above-header must land exactly on the header top;
+        // under-sill must land exactly on the sill underside and sole top
+        wd.cripples.forEach(c => {
+          const op = wd.openings.find(o => o.left + 15 < c.x_mm && o.right - 15 > c.x_mm);
+          const uM = uOf(c.x_mm);
+          if (c.role.includes('under sill')) {
+            ok(op && near(c.topMm, op.sillYMm - 235), `${wd.name.toUpperCase()}: ${c.role} top ${c.topMm} = sill underside ${op ? op.sillYMm - 235 : '?'}`);
+            ok(op && near(c.length_mm, op.sillYMm - 270), `${wd.name.toUpperCase()}: ${c.role} len ${c.length_mm} = sill underside − sole top (${op ? op.sillYMm - 270 : '?'})`);
+          } else {
+            const topExpect = Math.round(mm(heightAt(uM)) - 70);
+            ok(near(c.topMm, topExpect), `${wd.name.toUpperCase()}: ${c.role} top ${c.topMm} = top plate underside ${topExpect}`);
+            ok(op && near(c.length_mm, c.topMm - (op.headYMm - 200)), `${wd.name.toUpperCase()}: ${c.role} len ${c.length_mm} = ${c.topMm} − header top ${op ? op.headYMm - 200 : '?'}`);
+          }
+        });
+        // opening units stay inside the wall
+        wd.openings.forEach(o => {
+          ok(o.left >= -2 && o.right <= L + 2, `${wd.name.toUpperCase()}: unit ${o.label} [${o.left},${o.right}] inside wall [0,${L}]`);
+        });
+      });
+
+      // ---- floor ----
+      const Dmm = cut.floor.depthMm, Wmm = cut.floor.widthMm;
+      ok(near(cut.floor.rimJoistsLong[0].length_mm, Dmm) && cut.floor.rimJoistsLong[0].qty === 2, `FLOOR: side rim joists 2x${Dmm} = depth`);
+      ok(near(cut.floor.rimJoistsShort[0].length_mm, Wmm) && cut.floor.rimJoistsShort[0].qty === 2, `FLOOR: end rim joists 2x${Wmm} = width`);
+      cut.floor.joists.forEach(j => ok(near(j.length_mm, Dmm), `FLOOR: joist @${j.x_mm} spans ${j.length_mm} = depth ${Dmm}`));
+
+      // ---- roof ----
+      if (cut.roof.type === 'mono') {
+        const ov = config.overhang;
+        const frontH = h + d * Math.tan(pitchRad), backH = h;
+        const frontTip = frontH + 0.2 + ov * Math.tan(pitchRad);
+        const backTip = backH + 0.2 - ov * Math.tan(pitchRad);
+        const deckLen = Math.round(mm(Math.sqrt(Math.pow(d + 2 * ov, 2) + Math.pow(frontTip - backTip, 2))));
+        cut.roof.joists.forEach(j => ok(near(j.length_mm, deckLen), `ROOF: mono joist @${j.x_mm} = ${j.length_mm} (slope length ${deckLen})`));
+      } else {
+        const ov = config.overhang;
+        const run = w / 2 + ov;
+        const rise = (w / 2 + ov) * Math.tan(pitchRad);
+        const slabLen = Math.round(mm(Math.sqrt(run * run + rise * rise)));
+        ok(near(cut.roof.ridgeLen_mm, mm(d)), `ROOF: ridge board ${cut.roof.ridgeLen_mm} = depth ${mm(d)}`);
+        cut.roof.trusses.forEach(t => {
+          ok(near(t.rafterLen_mm, slabLen), `ROOF: truss @${t.x_mm} rafter ${t.rafterLen_mm} = slope length ${slabLen}`);
+          ok(near(t.tieLen_mm, mm(w)), `ROOF: truss @${t.x_mm} ceiling tie ${t.tieLen_mm} = width ${mm(w)}`);
+        });
+      }
+
+      out.push(`SUMMARY: ${out.length - fails}/${out.length} checks passed`);
+      window.__lastCutChecks = { lines: out, fails };
+      return window.__lastCutChecks;
+    };
+
     window.__devBuildPDF = function () {
+      applyDevRoofOverride();
       const shots = capture3DSnapshots();
       const doc = buildProductionPackPDF({ name: 'Dev Test Customer', email: 'dev@test.local', phone: '-' }, shots);
       return {

@@ -95,7 +95,7 @@ try {
 
   // pixel sanity on page 9 (front wall elevation): wood fills, blue glass, red dims
   const solid = await p2.evaluate(() => {
-    const canvas = window.__pages[8]; // page 9
+    const canvas = window.__pages[9]; // page 9
     const ctx = canvas.getContext('2d');
     const S = 1.7;
     const px = mm => Math.round(mm / 25.4 * 72 * S);
@@ -113,10 +113,19 @@ try {
     const top = at(120, 52.7);
     // bifold glass (x 155mm, y 100mm — above the label box) -> expect light blue
     const glass = at(155, 100);
-    // king stud at door edge (x 108.3mm) high up (y 58mm — above old trimmer top) -> wood (full height)
+    // king stud at door edge (x 108.3mm) high up (y 58mm) -> wood (full height)
     const king = at(108.3, 58);
+    // doubled king stud at 1015mm: face1 (x 106.2) wood, unit edge frame (x 108.3) dark,
+    // glass inside the unit (x 111) light blue — opening must sit BETWEEN the kings
+    const kingFace1 = at(106.2, 90);
+    const unitFrame = at(108.3, 90);
+    const glassInner = at(111, 90);
     // cripple stud over door (x 114.1mm = 1200mm stud, y 58mm) -> wood
     const cripple = at(114.1, 58);
+    // double top plate: ply1 (y 52.2), gap (y 53.6), ply2 (y 54.8)
+    const topPly1 = at(120, 52.2);
+    const topGap = at(120, 53.6);
+    const topPly2 = at(120, 54.8);
     // red dim presence: top chain band y 21.8..23.2 AND stud chain y 174..179
     let red = 0;
     for (let x = px(60); x <= px(240); x += 2) {
@@ -129,7 +138,28 @@ try {
         if (d[0] > 150 && d[1] < 100 && d[2] < 100) red++;
       }
     }
-    return `page9 -> stud:${stud} gap:${gap} sole:${sole} top:${top} glass:${glass} kingFullHt:${king} cripple:${cripple} redDimPx:${red}`;
+    // page 12 (right wall elevation, mono): sill cripple under window at 2400mm
+    const c12 = window.__pages[12].getContext('2d');
+    const at12 = (mx, my) => {
+      const d = c12.getImageData(px(mx), px(my), 1, 1).data;
+      return `rgb(${d[0]},${d[1]},${d[2]})`;
+    };
+    const sillCripple = at12(180.3, 120);   // cripple at 2400mm, mid of under-sill zone
+    const sillGap = at12(191.9, 120);       // 2700mm between cripples -> white
+    // apex checks: gable triangle fill on p9 (inside apex zone) + eave band on p11
+    const c9 = window.__pages[9].getContext('2d');
+    const at9 = (mx, my) => {
+      const d = c9.getImageData(px(mx), px(my), 1, 1).data;
+      return `rgb(${d[0]},${d[1]},${d[2]})`;
+    };
+    const gableFill = at9(155, 60);        // inside gable triangle (apex run only)
+    const c11 = window.__pages[12].getContext('2d');
+    const at11 = (mx, my) => {
+      const d = c11.getImageData(px(mx), px(my), 1, 1).data;
+      return `rgb(${d[0]},${d[1]},${d[2]})`;
+    };
+    const eaveBand = at11(155, 60);        // inside roof band (apex run only)
+    return `page9 -> stud:${stud} gap:${gap} sole:${sole} top:${top} glass:${glass} kingFullHt:${king} cripple:${cripple} redDimPx:${red}\npage9 detail -> kingFace1:${kingFace1} unitFrame:${unitFrame} glassInner:${glassInner} topPly1:${topPly1} topGap:${topGap} topPly2:${topPly2}\npage12 -> sillCripple:${sillCripple} sillGap:${sillGap}\npage9 gableFill:${gableFill} page11 eaveBand:${eaveBand}`;
   });
   console.log(solid);
   fs.writeFileSync(path.join(dir, 'output', 'text-dump.txt'), dump);

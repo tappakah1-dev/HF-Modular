@@ -30,10 +30,16 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1400, height: 900 });
   page.on('pageerror', e => console.log('[page error]', e.message));
-  await page.goto('http://localhost:8123/index.html?dev=1', { waitUntil: 'networkidle2', timeout: 90000 });
+  const roofParam = process.env.APEX ? '&apex=1' : '';
+  const stressParam = process.env.STRESS ? '&stress=1' : '';
+  await page.goto(`http://localhost:8123/index.html?dev=1${roofParam}${stressParam}`, { waitUntil: 'networkidle2', timeout: 90000 });
   await page.waitForFunction(() => window.__devBuildPDF && window.__devReady && window.__lastQuote, { timeout: 45000 });
 
   if (process.env.RED) await page.evaluate(() => { window.__devRedLabels = true; });
+  const checks = await page.evaluate(() => window.__devCheckCuts());
+  console.log('--- CUTTING LIST QA ---');
+  checks.lines.filter(l => l.startsWith('FAIL')).forEach(l => console.log(l));
+  console.log(checks.lines[checks.lines.length - 1]);
   const result = await page.evaluate(() => window.__devBuildPDF());
   const pdfBuf = Buffer.from(result.pdfBase64, 'base64');
   fs.writeFileSync(path.join(outDir, 'out.pdf'), pdfBuf);
